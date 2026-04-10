@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Mileage Tracker - Professional Edition</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-400: #94a3b8;
+            --slate-300: #cbd5e1;
+            --slate-100: #f1f5f9;
+            --violet-400: #7C6BA6;
+            --violet-500: #5F4B8B;
+            --violet-600: #4A3B6E;
+            --emerald-400: #34d399;
+            --emerald-500: #10b981;
+            --red-400: #f87171;
+            --red-500: #ef4444;
+        }
+
+        body {
+            font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--slate-900);
+            color: var(--slate-100);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 100vw;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(180deg, var(--slate-900) 0%, var(--slate-800) 100%);
+            padding: 1.5rem 1.25rem;
+            border-bottom: 1px solid var(--slate-700);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--violet-500);
+            margin-bottom: 0.25rem;
+        }
+
+        .header-subtitle {
+            font-size: 0.875rem;
+            color: var(--slate-400);
+            font-weight: 300;
+        }
+
+        .status-bar {
+            background: var(--slate-800);
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--slate-700);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--emerald-400);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.inactive {
+            background: var(--slate-600);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            padding: 1.25rem;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--slate-700);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: var(--slate-800);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            font-family: 'Work Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-400) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-start:hover {
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, var(--red-500) 0%, var(--red-400) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-stop:hover {
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .current-trip-card {
+            background: var(--slate-800);
+            border: 1px solid var(--slate-700);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .stat {
+            background: var(--slate-900);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--slate-700);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--slate-400);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--violet-500);
+            line-height: 1;
+        }
+
+        .stat-unit {
+            font-size: 0.875rem;
+            color: var(--slate-400);
+            font-weight: 400;
+            margin-left: 0.25rem;
+        }
+
+        .trips-section {
+            margin-top: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .section-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--slate-300);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-export {
+            background: var(--slate-700);
+            color: var(--slate-100);
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-export:hover {
+            background: var(--slate-600);
+        }
+
+        .btn-export-excel {
+            background: linear-gradient(135deg, #1d6f42 0%, #217346 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(33, 115, 70, 0.3);
+        }
+
+        .btn-export-excel:hover {
+            box-shadow: 0 4px 12px rgba(33, 115, 70, 0.4);
+        }
+
+        .trip-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .trip-item {
+            background: var(--slate-800);
+            border: 1px solid var(--slate-700);
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .trip-item:active {
+            background: var(--slate-700);
+        }
+
+        .trip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .trip-date {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--slate-300);
+        }
+
+        .trip-distance {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--violet-500);
+        }
+
+        .trip-details {
+            font-size: 0.875rem;
+            color: var(--slate-400);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--slate-400);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .btn-delete {
+            background: transparent;
+            border: 1px solid var(--red-500);
+            color: var(--red-400);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+        }
+
+        .permission-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 1.5rem;
+        }
+
+        .permission-modal.hidden {
+            display: none;
+        }
+
+        .permission-card {
+            background: var(--slate-800);
+            border: 1px solid var(--slate-700);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .permission-icon {
+            font-size: 4rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .permission-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--violet-500);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .permission-text {
+            color: var(--slate-300);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .permission-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-500) 100%);
+            color: white;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(95, 75, 139, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .permission-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // Haversine formula to calculate distance between two coordinates
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 3959; // Earth's radius in miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // Group trips by date and calculate daily totals
+        function groupTripsByDate(trips) {
+            const grouped = {};
+            trips.forEach(trip => {
+                const date = new Date(trip.startTime).toLocaleDateString();
+                if (!grouped[date]) {
+                    grouped[date] = [];
+                }
+                grouped[date].push(trip);
+            });
+            return grouped;
+        }
+
+        // Main App
+        class MileageTracker {
+            constructor() {
+                this.isTracking = false;
+                this.currentTrip = null;
+                this.trips = [];
+                this.receipts = [];
+                this.homeLocation = null;
+                this.watchId = null;
+                this.map = null;
+                this.currentMarker = null;
+                this.homeMarker = null;
+                this.routePolyline = null;
+
+                this.loadData();
+                this.initMap();
+                this.render();
+                this.requestLocation();
+            }
+
+            loadData() {
+                const savedTrips = localStorage.getItem('mileageTrips');
+                if (savedTrips) {
+                    this.trips = JSON.parse(savedTrips);
+                }
+
+                const savedHome = localStorage.getItem('homeLocation');
+                if (savedHome) {
+                    this.homeLocation = JSON.parse(savedHome);
+                }
+
+                const savedReceipts = localStorage.getItem('mileageReceipts');
+                if (savedReceipts) {
+                    this.receipts = JSON.parse(savedReceipts);
+                }
+            }
+
+            saveTrips() {
+                localStorage.setItem('mileageTrips', JSON.stringify(this.trips));
+            }
+
+            requestLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const { latitude, longitude } = position.coords;
+                            if (!this.homeLocation) {
+                                this.homeLocation = { lat: latitude, lng: longitude };
+                                localStorage.setItem('homeLocation', JSON.stringify(this.homeLocation));
+                            }
+                            if (this.map) {
+                                this.map.setView([latitude, longitude], 15);
+                                this.updateMapMarkers();
+                            }
+                        },
+                        (error) => {
+                            console.error('Location error:', error);
+                        }
+                    );
+                }
+            }
+
+            requestLocationPermission() {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser');
+                    return;
+                }
+
+                const modal = document.getElementById('permissionModal');
+                const btn = document.getElementById('enableLocationBtn');
+                
+                if (btn) btn.textContent = '🔄 Requesting...';
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        this.homeLocation = { lat: latitude, lng: longitude };
+                        localStorage.setItem('homeLocation', JSON.stringify(this.homeLocation));
+                        
+                        if (this.map) {
+                            this.map.setView([latitude, longitude], 16);
+                            this.updateMapMarkers();
+                        }
+                        
+                        if (modal) modal.classList.add('hidden');
+                    },
+                    (error) => {
+                        if (btn) btn.textContent = 'Enable Location Access';
+                        
+                        let message = 'Could not get your location. ';
+                        if (error.code === 1) {
+                            message += 'You denied location access. Please enable it in your browser settings:\n\n';
+                            message += '1. Tap the lock/info icon in the address bar\n';
+                            message += '2. Find "Location" permissions\n';
+                            message += '3. Select "Allow"\n';
+                            message += '4. Refresh the page';
+                        } else if (error.code === 2) {
+                            message += 'Location unavailable. Make sure GPS is enabled on your device.';
+                        } else if (error.code === 3) {
+                            message += 'Request timed out. Please try again.';
+                        }
+                        alert(message);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0
+                    }
+                );
+            }
+
+            initMap() {
+                setTimeout(() => {
+                    const mapElement = document.getElementById('map');
+                    if (!mapElement) return;
+
+                    // Initialize Leaflet map
+                    this.map = L.map('map', {
+                        zoomControl: true,
+                        attributionControl: false
+                    }).setView([38.7, -77.5], 13);
+
+                    // Add CartoDB tiles (works with local files)
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        maxZoom: 19,
+                        subdomains: 'abcd'
+                    }).addTo(this.map);
+
+                    // Initialize markers
+                    this.currentMarker = null;
+                    this.homeMarker = null;
+                    this.routePolyline = null;
+
+                    // Get current location and set home
+                    if (navigator.geolocation && !this.homeLocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                const { latitude, longitude } = position.coords;
+                                this.homeLocation = { lat: latitude, lng: longitude };
+                                localStorage.setItem('homeLocation', JSON.stringify(this.homeLocation));
+                                
+                                this.map.setView([latitude, longitude], 15);
+                                this.updateMapMarkers();
+                            }
+                        );
+                    } else if (this.homeLocation) {
+                        this.map.setView([this.homeLocation.lat, this.homeLocation.lng], 15);
+                        this.updateMapMarkers();
+                    }
+                }, 100);
+            }
+
+            updateMapMarkers() {
+                if (!this.map) return;
+
+                // Update home marker
+                if (this.homeLocation && !this.homeMarker) {
+                    this.homeMarker = L.marker([this.homeLocation.lat, this.homeLocation.lng], {
+                        icon: L.divIcon({
+                            className: 'home-marker',
+                            html: '<div style="background: #10b981; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                            iconSize: [16, 16]
+                        })
+                    }).addTo(this.map).bindPopup('Home');
+                }
+
+                // Update route
+                if (this.currentTrip && this.currentTrip.path.length > 1) {
+                    const latLngs = this.currentTrip.path.map(p => [p.lat, p.lng]);
+                    
+                    if (this.routePolyline) {
+                        this.routePolyline.setLatLngs(latLngs);
+                    } else {
+                        this.routePolyline = L.polyline(latLngs, {
+                            color: '#5F4B8B',
+                            weight: 4,
+                            opacity: 0.8
+                        }).addTo(this.map);
+                    }
+                }
+
+                // Update current position marker
+                if (this.currentTrip && this.currentTrip.lastPosition) {
+                    const pos = this.currentTrip.lastPosition;
+                    
+                    if (this.currentMarker) {
+                        this.currentMarker.setLatLng([pos.lat, pos.lng]);
+                    } else {
+                        this.currentMarker = L.marker([pos.lat, pos.lng], {
+                            icon: L.divIcon({
+                                className: 'current-marker',
+                                html: '<div style="background: #5F4B8B; width: 20px; height: 20px; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 12px rgba(95,75,139,0.6);"></div>',
+                                iconSize: [20, 20]
+                            })
+                        }).addTo(this.map);
+                    }
+
+                    // Center map on current position
+                    this.map.setView([pos.lat, pos.lng], this.map.getZoom());
+                }
+            }
+
+            clearMapMarkers() {
+                if (this.currentMarker) {
+                    this.map.removeLayer(this.currentMarker);
+                    this.currentMarker = null;
+                }
+                if (this.routePolyline) {
+                    this.map.removeLayer(this.routePolyline);
+                    this.routePolyline = null;
+                }
+            }
+
+            startTrip() {
+                if (!navigator.geolocation) {
+                    alert('Geolocation not supported');
+                    return;
+                }
+
+                this.currentTrip = {
+                    id: Date.now(),
+                    startTime: new Date().toISOString(),
+                    endTime: null,
+                    distance: 0,
+                    path: [],
+                    lastPosition: null
+                };
+
+                this.isTracking = true;
+                this.render();
+
+                // Set up periodic map updates
+                this.updateInterval = setInterval(() => {
+                    this.render();
+                }, 2000);
+
+                this.watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const newPoint = { lat: latitude, lng: longitude };
+
+                        let additionalDistance = 0;
+                        if (this.currentTrip.lastPosition) {
+                            additionalDistance = calculateDistance(
+                                this.currentTrip.lastPosition.lat,
+                                this.currentTrip.lastPosition.lng,
+                                latitude,
+                                longitude
+                            );
+                        }
+
+                        this.currentTrip.path.push(newPoint);
+                        this.currentTrip.distance += additionalDistance;
+                        this.currentTrip.lastPosition = newPoint;
+
+                        this.updateMapMarkers();
+                    },
+                    (error) => {
+                        console.error('Tracking error:', error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 0,
+                        timeout: 5000
+                    }
+                );
+            }
+
+            stopTrip() {
+                if (this.watchId) {
+                    navigator.geolocation.clearWatch(this.watchId);
+                    this.watchId = null;
+                }
+
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
+
+                if (this.currentTrip) {
+                    this.currentTrip.endTime = new Date().toISOString();
+                    this.trips.unshift(this.currentTrip);
+                    this.saveTrips();
+                }
+
+                this.isTracking = false;
+                this.currentTrip = null;
+                this.clearMapMarkers();
+                this.render();
+            }
+
+            deleteTrip(tripId) {
+                this.trips = this.trips.filter(t => t.id !== tripId);
+                this.saveTrips();
+                this.render();
+            }
+
+            exportCSV() {
+                const grouped = groupTripsByDate(this.trips);
+                const rows = [['Date', 'Trip Start', 'Trip End', 'Distance (mi)', 'Duration (min)', 'Daily Total (mi)']];
+
+                Object.keys(grouped).sort().reverse().forEach(date => {
+                    const dayTrips = grouped[date];
+                    const dailyTotal = dayTrips.reduce((sum, trip) => sum + trip.distance, 0);
+
+                    dayTrips.forEach((trip, index) => {
+                        const start = new Date(trip.startTime);
+                        const end = new Date(trip.endTime);
+                        const duration = Math.round((end - start) / 60000);
+
+                        rows.push([
+                            date,
+                            start.toLocaleTimeString(),
+                            end.toLocaleTimeString(),
+                            trip.distance.toFixed(2),
+                            duration,
+                            index === 0 ? dailyTotal.toFixed(2) : ''
+                        ]);
+                    });
+
+                    // Add separator
+                    rows.push(['', '', '', '', '', '']);
+                });
+
+                // Add grand total
+                const grandTotal = this.trips.reduce((sum, trip) => sum + trip.distance, 0);
+                rows.push(['GRAND TOTAL', '', '', '', '', grandTotal.toFixed(2)]);
+
+                const csvContent = rows.map(row => row.join(',')).join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `mileage-report-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            exportExcel() {
+                const grouped = groupTripsByDate(this.trips);
+                const data = [['Date', 'Trip Start', 'Trip End', 'Distance (mi)', 'Duration (min)', 'Daily Total (mi)']];
+
+                Object.keys(grouped).sort().reverse().forEach(date => {
+                    const dayTrips = grouped[date];
+                    const dailyTotal = dayTrips.reduce((sum, trip) => sum + trip.distance, 0);
+
+                    dayTrips.forEach((trip, index) => {
+                        const start = new Date(trip.startTime);
+                        const end = new Date(trip.endTime);
+                        const duration = Math.round((end - start) / 60000);
+
+                        data.push([
+                            date,
+                            start.toLocaleTimeString(),
+                            end.toLocaleTimeString(),
+                            parseFloat(trip.distance.toFixed(2)),
+                            duration,
+                            index === 0 ? parseFloat(dailyTotal.toFixed(2)) : ''
+                        ]);
+                    });
+
+                    data.push(['', '', '', '', '', '']);
+                });
+
+                const grandTotal = this.trips.reduce((sum, trip) => sum + trip.distance, 0);
+                data.push(['GRAND TOTAL', '', '', '', '', parseFloat(grandTotal.toFixed(2))]);
+
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                
+                // Set column widths
+                ws['!cols'] = [
+                    { wch: 12 },
+                    { wch: 12 },
+                    { wch: 12 },
+                    { wch: 12 },
+                    { wch: 14 },
+                    { wch: 16 }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Mileage Report');
+                XLSX.writeFile(wb, `mileage-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+            }
+
+            handleReceiptUpload(event) {
+                const file = event.target.files[0];
+                if (!file || !file.type.startsWith('image/')) {
+                    alert('Please upload an image file');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const newReceipt = {
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        imageData: e.target.result,
+                        fileName: file.name,
+                        note: ''
+                    };
+
+                    this.receipts.unshift(newReceipt);
+                    localStorage.setItem('mileageReceipts', JSON.stringify(this.receipts));
+                    this.render();
+                };
+                reader.readAsDataURL(file);
+            }
+
+            deleteReceipt(receiptId) {
+                this.receipts = this.receipts.filter(r => r.id !== receiptId);
+                localStorage.setItem('mileageReceipts', JSON.stringify(this.receipts));
+                this.render();
+            }
+
+            updateReceiptNote(receiptId, note) {
+                this.receipts = this.receipts.map(r => 
+                    r.id === receiptId ? { ...r, note } : r
+                );
+                localStorage.setItem('mileageReceipts', JSON.stringify(this.receipts));
+            }
+
+            render() {
+                const totalMiles = this.trips.reduce((sum, trip) => sum + trip.distance, 0);
+
+                document.getElementById('app').innerHTML = `
+                    <!-- Location Permission Modal -->
+                    <div id="permissionModal" class="permission-modal ${this.homeLocation ? 'hidden' : ''}">
+                        <div class="permission-card">
+                            <div class="permission-icon">📍</div>
+                            <div class="permission-title">Location Access Required</div>
+                            <div class="permission-text">
+                                This app needs access to your location to track mileage for your work trips. Your location data stays on your device and is never shared.
+                            </div>
+                            <button id="enableLocationBtn" class="permission-btn">
+                                Enable Location Access
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="app-container">
+                        <div class="header">
+                            <div class="header-title">MILEAGE TRACKER</div>
+                            <div class="header-subtitle">Work Trip Monitoring System</div>
+                        </div>
+
+                        <div class="status-bar">
+                            <div class="status-indicator">
+                                <div class="status-dot ${this.isTracking ? '' : 'inactive'}"></div>
+                                <span>${this.isTracking ? 'TRACKING' : 'IDLE'}</span>
+                            </div>
+                            <div>GPS: ACTIVE</div>
+                        </div>
+
+                        <div class="main-content">
+                            <div class="map-container">
+                                <div id="map"></div>
+                                <button id="locateBtn" style="position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; border: 2px solid var(--violet-500); color: var(--violet-500); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                    📍 Locate Me
+                                </button>
+                            </div>
+
+                            <div class="controls-grid">
+                                <button class="btn btn-start" id="startBtn" ${this.isTracking ? 'disabled' : ''}>
+                                    ▶ Start Trip
+                                </button>
+                                <button class="btn btn-stop" id="stopBtn" ${!this.isTracking ? 'disabled' : ''}>
+                                    ■ Stop Trip
+                                </button>
+                            </div>
+
+                            ${this.isTracking && this.currentTrip ? `
+                                <div class="current-trip-card">
+                                    <div class="card-title">Current Trip</div>
+                                    <div class="stats-grid">
+                                        <div class="stat">
+                                            <div class="stat-label">Distance</div>
+                                            <div class="stat-value">
+                                                ${this.currentTrip.distance.toFixed(2)}
+                                                <span class="stat-unit">mi</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat">
+                                            <div class="stat-label">Duration</div>
+                                            <div class="stat-value">
+                                                ${Math.round((new Date() - new Date(this.currentTrip.startTime)) / 60000)}
+                                                <span class="stat-unit">min</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="trips-section">
+                                <div class="section-header">
+                                    <div class="section-title">
+                                        Trip History (${totalMiles.toFixed(1)} mi total)
+                                    </div>
+                                    ${this.trips.length > 0 ? `
+                                        <div class="export-buttons">
+                                            <button class="btn-export" id="exportCsvBtn">
+                                                📊 Export CSV
+                                            </button>
+                                            <button class="btn-export btn-export-excel" id="exportExcelBtn">
+                                                📗 Export Excel
+                                            </button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                ${this.trips.length === 0 ? `
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">🚗</div>
+                                        <div>No trips recorded yet</div>
+                                        <div style="font-size: 0.875rem; margin-top: 0.5rem">
+                                            Start your first trip to begin tracking mileage
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="trip-list">
+                                        ${this.trips.map(trip => {
+                                            const start = new Date(trip.startTime);
+                                            const end = new Date(trip.endTime);
+                                            const duration = Math.round((end - start) / 60000);
+                                            
+                                            return `
+                                                <div class="trip-item">
+                                                    <div class="trip-header">
+                                                        <div class="trip-date">
+                                                            ${start.toLocaleDateString()} • ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                        <div class="trip-distance">
+                                                            ${trip.distance.toFixed(2)} mi
+                                                        </div>
+                                                    </div>
+                                                    <div class="trip-details">
+                                                        <span>⏱ ${duration} min</span>
+                                                        <span>📍 ${trip.path.length} points</span>
+                                                    </div>
+                                                    <button class="btn-delete" onclick="app.deleteTrip(${trip.id})">
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- Receipts & Photos Section -->
+                            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--slate-700);">
+                                <div class="section-header">
+                                    <div class="section-title">
+                                        Receipts & Photos (${this.receipts.length})
+                                    </div>
+                                    <div>
+                                        <input
+                                            type="file"
+                                            id="receiptInput"
+                                            accept="image/*"
+                                            capture="environment"
+                                            style="display: none;"
+                                        />
+                                        <button class="btn-export btn-export-excel" id="addPhotoBtn">
+                                            📷 Add Photo
+                                        </button>
+                                    </div>
+                                </div>
+
+                                ${this.receipts.length === 0 ? `
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">🧾</div>
+                                        <div>No receipts or photos yet</div>
+                                        <div style="font-size: 0.875rem; margin-top: 0.5rem">
+                                            Tap "Add Photo" to capture gas receipts
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                        ${this.receipts.map(receipt => {
+                                            const date = new Date(receipt.timestamp);
+                                            return `
+                                                <div style="background: var(--slate-800); border: 1px solid var(--slate-700); border-radius: 8px; overflow: hidden;">
+                                                    <div style="width: 100%; height: 200px; overflow: hidden; background: var(--slate-900); display: flex; align-items: center; justify-content: center; cursor: pointer;"
+                                                         onclick="window.open().document.write('<img src=\\'${receipt.imageData}\\' style=\\'max-width:100%; height:auto;\\'/>'); void(0);">
+                                                        <img src="${receipt.imageData}" 
+                                                             alt="${receipt.fileName}"
+                                                             style="width: 100%; height: 100%; object-fit: cover;" />
+                                                    </div>
+                                                    <div style="padding: 1rem;">
+                                                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--slate-400); margin-bottom: 0.5rem;">
+                                                            ${date.toLocaleDateString()} • ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Add note (e.g., 'Shell gas, $45.20')"
+                                                            value="${receipt.note}"
+                                                            oninput="app.updateReceiptNote(${receipt.id}, this.value)"
+                                                            style="width: 100%; background: var(--slate-900); border: 1px solid var(--slate-700); border-radius: 4px; padding: 0.5rem; color: var(--slate-100); font-size: 0.875rem; margin-bottom: 0.5rem;"
+                                                        />
+                                                        <button onclick="app.deleteReceipt(${receipt.id})" class="btn-delete" style="width: 100%;">
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Re-attach event listeners
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                const exportCsvBtn = document.getElementById('exportCsvBtn');
+                const exportExcelBtn = document.getElementById('exportExcelBtn');
+                const addPhotoBtn = document.getElementById('addPhotoBtn');
+                const receiptInput = document.getElementById('receiptInput');
+                const locateBtn = document.getElementById('locateBtn');
+                const enableLocationBtn = document.getElementById('enableLocationBtn');
+
+                if (startBtn) startBtn.addEventListener('click', () => this.startTrip());
+                if (stopBtn) stopBtn.addEventListener('click', () => this.stopTrip());
+                if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => this.exportCSV());
+                if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => this.exportExcel());
+                if (addPhotoBtn) addPhotoBtn.addEventListener('click', () => receiptInput.click());
+                if (receiptInput) receiptInput.addEventListener('change', (e) => this.handleReceiptUpload(e));
+                if (locateBtn) locateBtn.addEventListener('click', () => this.locateUser());
+                if (enableLocationBtn) enableLocationBtn.addEventListener('click', () => this.requestLocationPermission());
+
+                // Reinitialize map
+                this.initMap();
+            }
+        }
+
+        // Initialize app
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new MileageTracker();
+        });
+    </script>
+</body>
+</html>
