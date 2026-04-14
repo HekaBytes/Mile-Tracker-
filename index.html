@@ -13,6 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <style>
         * {
@@ -126,6 +128,7 @@
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
             z-index: 1;
+            position: relative;
         }
 
         #map {
@@ -478,6 +481,7 @@
                 this.routePolyline = null;
 
                 this.loadData();
+                this.loadCurrentTrip(); // Check for unfinished trip
                 this.initMap();
                 this.render();
                 this.requestLocation();
@@ -688,10 +692,12 @@
                     endTime: null,
                     distance: 0,
                     path: [],
-                    lastPosition: null
+                    lastPosition: null,
+                    inProgress: true
                 };
 
                 this.isTracking = true;
+                this.saveCurrentTrip(); // Auto-save immediately
                 this.render();
 
                 // Set up periodic map updates
@@ -719,6 +725,7 @@
                         this.currentTrip.lastPosition = newPoint;
 
                         this.updateMapMarkers();
+                        this.saveCurrentTrip(); // Auto-save on every GPS update
                     },
                     (error) => {
                         console.error('Tracking error:', error);
@@ -729,6 +736,31 @@
                         timeout: 5000
                     }
                 );
+            }
+
+            saveCurrentTrip() {
+                if (this.currentTrip) {
+                    localStorage.setItem('currentTrip', JSON.stringify(this.currentTrip));
+                }
+            }
+
+            loadCurrentTrip() {
+                const saved = localStorage.getItem('currentTrip');
+                if (saved) {
+                    try {
+                        const trip = JSON.parse(saved);
+                        if (trip.inProgress && confirm(`You have an unfinished trip from ${new Date(trip.startTime).toLocaleString()}. Resume it?`)) {
+                            this.currentTrip = trip;
+                            this.isTracking = true;
+                            this.updateMapMarkers();
+                            this.startTrip(); // Resume tracking
+                        } else {
+                            localStorage.removeItem('currentTrip');
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('currentTrip');
+                    }
+                }
             }
 
             stopTrip() {
@@ -744,20 +776,182 @@
 
                 if (this.currentTrip) {
                     this.currentTrip.endTime = new Date().toISOString();
-                    this.trips.unshift(this.currentTrip);
-                    this.saveTrips();
+                    this.currentTrip.inProgress = false;
+                    
+                    // Generate trip summary screenshot before clearing map
+                    this.generateTripScreenshot(this.currentTrip).then(() => {
+                        this.trips.unshift(this.currentTrip);
+                        this.saveTrips();
+                        localStorage.removeItem('currentTrip'); // Clear auto-saved trip
+                        this.isTracking = false;
+                        this.currentTrip = null;
+                        this.clearMapMarkers();
+                        this.render();
+                    });
+                } else {
+                    this.isTracking = false;
+                    this.currentTrip = null;
+                    localStorage.removeItem('currentTrip');
+                    this.clearMapMarkers();
+                    this.render();
                 }
+            }
 
-                this.isTracking = false;
-                this.currentTrip = null;
-                this.clearMapMarkers();
-                this.render();
+            async generateTripScreenshot(trip) {
+                if (!this.map || !trip.path || trip.path.length < 2) return;
+
+                try {
+                    // Add start and end markers for screenshot
+                    const startPos = trip.path[0];
+                    const endPos = trip.path[trip.path.length - 1];
+
+                    const startMarker = L.marker([startPos.lat, startPos.lng], {
+                        icon: L.divIcon({
+                            className: 'start-marker',
+                            html: '<div style="background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">START</div>',
+                            iconSize: [50, 30]
+                        })
+                    }).addTo(this.map);
+
+                    const endMarker = L.marker([endPos.lat, endPos.lng], {
+                        icon: L.divIcon({
+                            className: 'end-marker',
+                            html: '<div style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">END</div>',
+                            iconSize: [50, 30]
+                        })
+                    }).addTo(this.map);
+
+                    // Fit map to show full route
+                    const bounds = L.latLngBounds(trip.path.map(p => [p.lat, p.lng]));
+                    this.map.fitBounds(bounds, { padding: [50, 50] });
+
+                    // Add info overlay
+                    const startDate = new Date(trip.startTime);
+                    const endDate = new Date(trip.endTime);
+                    const duration = Math.round((endDate - startDate) / 60000);
+
+                    const overlay = document.createElement('div');
+                    overlay.id = 'trip-screenshot-overlay';
+                    overlay.style.cssText = `
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        background: rgba(15, 23, 42, 0.95);
+                        color: #f1f5f9;
+                        padding: 1rem;
+                        border-radius: 8px;
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 12px;
+                        z-index: 1000;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                    `;
+                    overlay.innerHTML = `
+                        <div style="font-size: 14px; font-weight: 700; color: #5F4B8B; margin-bottom: 8px;">TRIP SUMMARY</div>
+                        <div><strong>Date:</strong> ${startDate.toLocaleDateString()}</div>
+                        <div><strong>Start:</strong> ${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div><strong>End:</strong> ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div><strong>Distance:</strong> ${trip.distance.toFixed(2)} mi</div>
+                        <div><strong>Duration:</strong> ${duration} min</div>
+                    `;
+
+                    const mapContainer = document.querySelector('.map-container');
+                    mapContainer.appendChild(overlay);
+
+                    // Wait for map to render
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // Capture screenshot
+                    const canvas = await html2canvas(mapContainer, {
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#1e293b'
+                    });
+
+                    trip.screenshot = canvas.toDataURL('image/png');
+
+                    // Clean up
+                    this.map.removeLayer(startMarker);
+                    this.map.removeLayer(endMarker);
+                    overlay.remove();
+
+                } catch (error) {
+                    console.error('Screenshot generation failed:', error);
+                }
             }
 
             deleteTrip(tripId) {
                 this.trips = this.trips.filter(t => t.id !== tripId);
                 this.saveTrips();
                 this.render();
+            }
+
+            viewTripScreenshot(tripId) {
+                const trip = this.trips.find(t => t.id === tripId);
+                if (!trip || !trip.screenshot) return;
+
+                // Open screenshot in new window
+                const win = window.open('', '_blank');
+                const startDate = new Date(trip.startTime);
+                win.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Trip Proof - ${startDate.toLocaleDateString()}</title>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                                background: #0f172a;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                font-family: monospace;
+                                color: #f1f5f9;
+                            }
+                            img {
+                                max-width: 100%;
+                                height: auto;
+                                border-radius: 8px;
+                                box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                            }
+                            .buttons {
+                                margin-top: 20px;
+                                display: flex;
+                                gap: 10px;
+                            }
+                            button {
+                                padding: 10px 20px;
+                                background: #5F4B8B;
+                                color: white;
+                                border: none;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            }
+                            button:hover {
+                                background: #4A3B6E;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Trip Proof - ${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString()}</h2>
+                        <img src="${trip.screenshot}" alt="Trip Screenshot" />
+                        <div class="buttons">
+                            <button onclick="downloadImage()">📥 Download</button>
+                            <button onclick="window.print()">🖨️ Print</button>
+                            <button onclick="window.close()">✕ Close</button>
+                        </div>
+                        <script>
+                            function downloadImage() {
+                                const a = document.createElement('a');
+                                a.href = '${trip.screenshot}';
+                                a.download = 'trip-proof-${startDate.toISOString().split('T')[0]}.png';
+                                a.click();
+                            }
+                        </script>
+                    </body>
+                    </html>
+                `);
             }
 
             exportCSV() {
@@ -803,7 +997,7 @@
 
             exportExcel() {
                 const grouped = groupTripsByDate(this.trips);
-                const data = [['Date', 'Trip Start', 'Trip End', 'Distance (mi)', 'Duration (min)', 'Daily Total (mi)']];
+                const data = [['Date', 'Trip Start', 'Trip End', 'Distance (mi)', 'Duration (min)', 'Daily Total (mi)', 'Screenshot']];
 
                 Object.keys(grouped).sort().reverse().forEach(date => {
                     const dayTrips = grouped[date];
@@ -820,15 +1014,16 @@
                             end.toLocaleTimeString(),
                             parseFloat(trip.distance.toFixed(2)),
                             duration,
-                            index === 0 ? parseFloat(dailyTotal.toFixed(2)) : ''
+                            index === 0 ? parseFloat(dailyTotal.toFixed(2)) : '',
+                            trip.screenshot ? 'Available' : 'None'
                         ]);
                     });
 
-                    data.push(['', '', '', '', '', '']);
+                    data.push(['', '', '', '', '', '', '']);
                 });
 
                 const grandTotal = this.trips.reduce((sum, trip) => sum + trip.distance, 0);
-                data.push(['GRAND TOTAL', '', '', '', '', parseFloat(grandTotal.toFixed(2))]);
+                data.push(['GRAND TOTAL', '', '', '', '', parseFloat(grandTotal.toFixed(2)), '']);
 
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 
@@ -839,12 +1034,60 @@
                     { wch: 12 },
                     { wch: 12 },
                     { wch: 14 },
-                    { wch: 16 }
+                    { wch: 16 },
+                    { wch: 12 }
                 ];
 
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, 'Mileage Report');
+                
+                // Add note about screenshots
+                const noteSheet = XLSX.utils.aoa_to_sheet([
+                    ['TRIP SCREENSHOTS'],
+                    [''],
+                    ['Screenshots are stored in the app and can be:'],
+                    ['1. Viewed individually by clicking "View Trip Proof" on each trip'],
+                    ['2. Downloaded all at once using "Download All Screenshots" button'],
+                    [''],
+                    ['Each screenshot shows:'],
+                    ['- Complete route map with START and END markers'],
+                    ['- Date, start time, end time'],
+                    ['- Total distance and duration'],
+                    [''],
+                    ['Perfect for expense report proof and reimbursement documentation.']
+                ]);
+                XLSX.utils.book_append_sheet(wb, noteSheet, 'Screenshot Info');
+                
                 XLSX.writeFile(wb, `mileage-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+            }
+
+            async downloadAllScreenshots() {
+                const tripsWithScreenshots = this.trips.filter(t => t.screenshot);
+                
+                if (tripsWithScreenshots.length === 0) {
+                    alert('No trip screenshots available to download.');
+                    return;
+                }
+
+                const zip = new JSZip();
+                const folder = zip.folder('trip-screenshots');
+
+                tripsWithScreenshots.forEach(trip => {
+                    const start = new Date(trip.startTime);
+                    const filename = `trip-${start.toISOString().split('T')[0]}-${start.toLocaleTimeString().replace(/:/g, '-')}.png`;
+                    
+                    // Convert base64 to blob
+                    const base64Data = trip.screenshot.split(',')[1];
+                    folder.file(filename, base64Data, {base64: true});
+                });
+
+                const blob = await zip.generateAsync({type: 'blob'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `all-trip-screenshots-${new Date().toISOString().split('T')[0]}.zip`;
+                a.click();
+                URL.revokeObjectURL(url);
             }
 
             handleReceiptUpload(event) {
@@ -968,6 +1211,11 @@
                                             <button class="btn-export btn-export-excel" id="exportExcelBtn">
                                                 📗 Export Excel
                                             </button>
+                                            ${this.trips.some(t => t.screenshot) ? `
+                                                <button class="btn-export" id="downloadScreenshotsBtn" style="background: linear-gradient(135deg, #4A3B6E 0%, #5F4B8B 100%); color: white;">
+                                                    📸 Download Screenshots
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     ` : ''}
                                 </div>
@@ -1001,6 +1249,12 @@
                                                         <span>⏱ ${duration} min</span>
                                                         <span>📍 ${trip.path.length} points</span>
                                                     </div>
+                                                    ${trip.screenshot ? `
+                                                        <button class="btn-export" onclick="app.viewTripScreenshot(${trip.id})" 
+                                                                style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-500) 100%); color: white;">
+                                                            📸 View Trip Proof
+                                                        </button>
+                                                    ` : ''}
                                                     <button class="btn-delete" onclick="app.deleteTrip(${trip.id})">
                                                         Delete
                                                     </button>
@@ -1085,6 +1339,7 @@
                 const receiptInput = document.getElementById('receiptInput');
                 const locateBtn = document.getElementById('locateBtn');
                 const enableLocationBtn = document.getElementById('enableLocationBtn');
+                const downloadScreenshotsBtn = document.getElementById('downloadScreenshotsBtn');
 
                 if (startBtn) startBtn.addEventListener('click', () => this.startTrip());
                 if (stopBtn) stopBtn.addEventListener('click', () => this.stopTrip());
@@ -1094,6 +1349,7 @@
                 if (receiptInput) receiptInput.addEventListener('change', (e) => this.handleReceiptUpload(e));
                 if (locateBtn) locateBtn.addEventListener('click', () => this.locateUser());
                 if (enableLocationBtn) enableLocationBtn.addEventListener('click', () => this.requestLocationPermission());
+                if (downloadScreenshotsBtn) downloadScreenshotsBtn.addEventListener('click', () => this.downloadAllScreenshots());
 
                 // Reinitialize map
                 this.initMap();
