@@ -530,18 +530,27 @@
             }
 
             requestLocationPermission() {
+                console.log('requestLocationPermission called'); // Debug log
+                
                 if (!navigator.geolocation) {
-                    alert('Geolocation is not supported by your browser');
+                    alert('ERROR: Geolocation is not supported by your browser. Please use Chrome on Android or Safari on iOS.');
                     return;
                 }
 
                 const modal = document.getElementById('permissionModal');
                 const btn = document.getElementById('enableLocationBtn');
                 
-                if (btn) btn.textContent = '🔄 Requesting...';
+                // Visual feedback
+                if (btn) {
+                    btn.textContent = '🔄 Requesting Permission...';
+                    btn.style.opacity = '0.7';
+                }
+
+                console.log('Requesting geolocation...'); // Debug log
 
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
+                        console.log('Location permission granted!', position); // Debug log
                         const { latitude, longitude } = position.coords;
                         this.homeLocation = { lat: latitude, lng: longitude };
                         localStorage.setItem('homeLocation', JSON.stringify(this.homeLocation));
@@ -552,22 +561,39 @@
                         }
                         
                         if (modal) modal.classList.add('hidden');
+                        alert('✓ Location enabled! Green marker shows your location.');
                     },
                     (error) => {
-                        if (btn) btn.textContent = 'Enable Location Access';
+                        console.error('Geolocation error:', error); // Debug log
                         
-                        let message = 'Could not get your location. ';
-                        if (error.code === 1) {
-                            message += 'You denied location access. Please enable it in your browser settings:\n\n';
-                            message += '1. Tap the lock/info icon in the address bar\n';
-                            message += '2. Find "Location" permissions\n';
-                            message += '3. Select "Allow"\n';
-                            message += '4. Refresh the page';
-                        } else if (error.code === 2) {
-                            message += 'Location unavailable. Make sure GPS is enabled on your device.';
-                        } else if (error.code === 3) {
-                            message += 'Request timed out. Please try again.';
+                        if (btn) {
+                            btn.textContent = 'Enable Location Access';
+                            btn.style.opacity = '1';
                         }
+                        
+                        let message = '⚠️ Location Access Failed\n\n';
+                        
+                        if (error.code === 1) {
+                            message += 'DENIED: You blocked location access.\n\n';
+                            message += 'To fix:\n';
+                            message += 'ANDROID: Tap 🔒 icon → Permissions → Location → Allow\n';
+                            message += 'iOS: Tap AA in address bar → Website Settings → Location → Allow\n\n';
+                            message += 'Then refresh the page.';
+                        } else if (error.code === 2) {
+                            message += 'UNAVAILABLE: Location service is unavailable.\n\n';
+                            message += 'Make sure:\n';
+                            message += '• Device GPS is turned ON\n';
+                            message += '• You have internet connection\n';
+                            message += '• You\'re using HTTPS (not HTTP or file://)';
+                        } else if (error.code === 3) {
+                            message += 'TIMEOUT: Request timed out.\n\n';
+                            message += 'Try again in a moment.';
+                        } else {
+                            message += 'UNKNOWN ERROR: ' + error.message + '\n\n';
+                            message += 'Are you on GitHub Pages URL (https://...)?\n';
+                            message += 'Local files (file://...) will NOT work.';
+                        }
+                        
                         alert(message);
                     },
                     {
@@ -1137,7 +1163,13 @@
                             <div class="permission-icon">📍</div>
                             <div class="permission-title">Location Access Required</div>
                             <div class="permission-text">
-                                This app needs access to your location to track mileage for your work trips. Your location data stays on your device and is never shared.
+                                This app needs your location to track work trips. Your data stays on your device and is never shared.
+                            </div>
+                            <div style="background: rgba(95,75,139,0.2); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.875rem; color: #cbd5e1;">
+                                ⚠️ Make sure you're using:<br/>
+                                <strong>Android:</strong> Chrome browser<br/>
+                                <strong>iOS:</strong> Safari browser<br/>
+                                <strong>URL must start with:</strong> https://
                             </div>
                             <button id="enableLocationBtn" class="permission-btn">
                                 Enable Location Access
