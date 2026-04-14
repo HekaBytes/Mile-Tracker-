@@ -6,119 +6,124 @@
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Mileage Tracker - Professional Edition</title>
+    <title>Mileage Tracker</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <style>
+        :root {
+            --violet-900: #2E1A47;
+            --violet-800: #3B2558;
+            --violet-700: #4A3166;
+            --violet-600: #5F4B8B;
+            --violet-500: #7C5FA3;
+            --violet-400: #9B7BB8;
+            --slate-950: #0a0e1a;
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-500: #64748b;
+            --slate-400: #94a3b8;
+            --slate-300: #cbd5e1;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+            --green-500: #10b981;
+            --green-600: #059669;
+            --red-500: #ef4444;
+            --red-600: #dc2626;
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
-        :root {
-            --slate-900: #0f172a;
-            --slate-800: #1e293b;
-            --slate-700: #334155;
-            --slate-600: #475569;
-            --slate-400: #94a3b8;
-            --slate-300: #cbd5e1;
-            --slate-100: #f1f5f9;
-            --violet-400: #7C6BA6;
-            --violet-500: #5F4B8B;
-            --violet-600: #4A3B6E;
-            --emerald-400: #34d399;
-            --emerald-500: #10b981;
-            --red-400: #f87171;
-            --red-500: #ef4444;
-        }
-
+        
         body {
-            font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Work Sans', -apple-system, sans-serif;
             background: var(--slate-900);
             color: var(--slate-100);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
             overflow-x: hidden;
         }
-
+        
         .app-container {
-            max-width: 100vw;
-            min-height: 100vh;
-            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
         }
-
+        
         .header {
-            background: linear-gradient(180deg, var(--slate-900) 0%, var(--slate-800) 100%);
-            padding: 1.5rem 1.25rem;
+            text-align: center;
+            padding: 2rem 0 1.5rem;
             border-bottom: 1px solid var(--slate-700);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
         }
-
+        
         .header-title {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            color: var(--violet-500);
-            margin-bottom: 0.25rem;
+            color: var(--violet-400);
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
         }
-
+        
         .header-subtitle {
             font-size: 0.875rem;
             color: var(--slate-400);
             font-weight: 300;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
         }
-
+        
         .status-bar {
-            background: var(--slate-800);
-            padding: 0.75rem 1.25rem;
-            border-bottom: 1px solid var(--slate-700);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0.75rem 1rem;
+            background: var(--slate-800);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.875rem;
         }
-
+        
         .status-indicator {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-
+        
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: var(--emerald-400);
+            background: var(--green-500);
+            box-shadow: 0 0 10px var(--green-500);
             animation: pulse 2s ease-in-out infinite;
         }
-
+        
         .status-dot.inactive {
             background: var(--slate-600);
+            box-shadow: none;
             animation: none;
         }
-
+        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-
-        .main-content {
-            padding: 1.25rem;
-        }
-
+        
         .map-container {
             width: 100%;
             height: 300px;
@@ -127,323 +132,323 @@
             border: 1px solid var(--slate-700);
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            z-index: 1;
             position: relative;
+            background: var(--slate-800);
         }
-
+        
         #map {
             width: 100%;
             height: 100%;
             background: var(--slate-800);
         }
-
-        .controls-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .btn {
-            font-family: 'Work Sans', sans-serif;
-            font-size: 1rem;
-            font-weight: 500;
-            padding: 1rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            position: relative;
-            overflow: hidden;
-            touch-action: manipulation;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-start {
-            background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-400) 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .btn-start:hover {
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-        }
-
-        .btn-stop {
-            background: linear-gradient(135deg, var(--red-500) 0%, var(--red-400) 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-        }
-
-        .btn-stop:hover {
-            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .current-trip-card {
+        
+        .locate-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
             background: var(--slate-800);
-            border: 1px solid var(--slate-700);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .card-title {
-            font-family: 'JetBrains Mono', monospace;
+            color: var(--slate-100);
+            border: 1px solid var(--slate-600);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
             font-size: 0.875rem;
-            color: var(--slate-400);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 1rem;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s;
         }
-
-        .stats-grid {
+        
+        .locate-btn:hover {
+            background: var(--violet-600);
+            border-color: var(--violet-500);
+        }
+        
+        .trip-controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
         }
-
-        .stat {
-            background: var(--slate-900);
+        
+        .trip-stats {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .stat-card {
+            background: var(--slate-800);
             padding: 1rem;
             border-radius: 8px;
             border: 1px solid var(--slate-700);
         }
-
+        
         .stat-label {
             font-size: 0.75rem;
             color: var(--slate-400);
-            margin-bottom: 0.25rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
         }
-
+        
         .stat-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            color: var(--violet-500);
-            line-height: 1;
+            color: var(--violet-400);
         }
-
-        .stat-unit {
+        
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, var(--green-600) 0%, var(--green-500) 100%);
+            color: white;
+        }
+        
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-start:active {
+            transform: translateY(0);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, var(--red-600) 0%, var(--red-500) 100%);
+            color: white;
+        }
+        
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-export {
+            background: var(--slate-800);
+            color: var(--slate-100);
+            border: 1px solid var(--slate-600);
+            padding: 0.625rem 1rem;
             font-size: 0.875rem;
-            color: var(--slate-400);
-            font-weight: 400;
-            margin-left: 0.25rem;
         }
-
-        .trips-section {
-            margin-top: 2rem;
+        
+        .btn-export:hover {
+            background: var(--violet-600);
+            border-color: var(--violet-500);
         }
-
+        
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--slate-700);
         }
-
+        
         .section-title {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem;
-            color: var(--slate-300);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: var(--violet-400);
         }
-
+        
         .export-buttons {
             display: flex;
             gap: 0.5rem;
+            flex-wrap: wrap;
         }
-
-        .btn-export {
-            background: var(--slate-700);
-            color: var(--slate-100);
-            font-size: 0.875rem;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-family: 'Work Sans', sans-serif;
-            font-weight: 500;
-            transition: all 0.2s ease;
+        
+        .trips-section {
+            margin-bottom: 2rem;
         }
-
-        .btn-export:hover {
-            background: var(--slate-600);
-        }
-
-        .btn-export-excel {
-            background: linear-gradient(135deg, #1d6f42 0%, #217346 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(33, 115, 70, 0.3);
-        }
-
-        .btn-export-excel:hover {
-            box-shadow: 0 4px 12px rgba(33, 115, 70, 0.4);
-        }
-
-        .trip-list {
+        
+        .trips-list {
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
         }
-
+        
         .trip-item {
             background: var(--slate-800);
-            border: 1px solid var(--slate-700);
-            border-radius: 8px;
             padding: 1rem;
-            transition: all 0.2s ease;
+            border-radius: 8px;
+            border: 1px solid var(--slate-700);
         }
-
-        .trip-item:active {
-            background: var(--slate-700);
-        }
-
+        
         .trip-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: baseline;
             margin-bottom: 0.5rem;
         }
-
+        
         .trip-date {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.875rem;
             color: var(--slate-300);
         }
-
+        
         .trip-distance {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--violet-500);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--violet-400);
         }
-
+        
         .trip-details {
-            font-size: 0.875rem;
-            color: var(--slate-400);
             display: flex;
             gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--slate-400);
+            margin-bottom: 0.5rem;
         }
-
+        
+        .btn-delete {
+            background: transparent;
+            color: var(--red-500);
+            border: 1px solid var(--slate-700);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+        
+        .btn-delete:hover {
+            background: var(--red-500);
+            color: white;
+            border-color: var(--red-500);
+        }
+        
+        .receipts-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--slate-700);
+        }
+        
+        .receipts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .receipt-card {
+            background: var(--slate-800);
+            border: 1px solid var(--slate-700);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .receipt-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        
+        .receipt-info {
+            padding: 0.75rem;
+        }
+        
+        .receipt-date {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--slate-400);
+            margin-bottom: 0.5rem;
+        }
+        
+        .receipt-note {
+            width: 100%;
+            background: var(--slate-900);
+            border: 1px solid var(--slate-700);
+            color: var(--slate-200);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-family: 'Work Sans', sans-serif;
+            margin-bottom: 0.5rem;
+        }
+        
+        .receipt-note::placeholder {
+            color: var(--slate-500);
+        }
+        
         .empty-state {
             text-align: center;
-            padding: 3rem 1.5rem;
-            color: var(--slate-400);
+            padding: 3rem 1rem;
+            color: var(--slate-500);
         }
-
+        
         .empty-state-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
             opacity: 0.5;
         }
-
-        .btn-delete {
-            background: transparent;
-            border: 1px solid var(--red-500);
-            color: var(--red-400);
-            font-size: 0.75rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            margin-top: 0.5rem;
-            cursor: pointer;
-            font-family: 'Work Sans', sans-serif;
-        }
-
-        .permission-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 1.5rem;
-        }
-
-        .permission-modal.hidden {
+        
+        #receiptInput {
             display: none;
         }
-
-        .permission-card {
-            background: var(--slate-800);
-            border: 1px solid var(--slate-700);
-            border-radius: 16px;
-            padding: 2rem;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .permission-icon {
-            font-size: 4rem;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        .permission-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--violet-500);
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        .permission-text {
-            color: var(--slate-300);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .permission-btn {
-            width: 100%;
-            background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-500) 100%);
+        
+        .add-photo-btn {
+            background: var(--violet-600);
             color: white;
-            font-family: 'Work Sans', sans-serif;
-            font-weight: 600;
-            font-size: 1rem;
-            padding: 1rem;
             border: none;
+            padding: 0.75rem 1.25rem;
             border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(95, 75, 139, 0.4);
-            transition: all 0.2s ease;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.2s;
         }
-
-        .permission-btn:active {
-            transform: scale(0.98);
+        
+        .add-photo-btn:hover {
+            background: var(--violet-500);
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 640px) {
+            .trip-controls {
+                grid-template-columns: 1fr;
+            }
+            .trip-stats {
+                grid-template-columns: 1fr;
+            }
+            .export-buttons {
+                width: 100%;
+            }
+            .btn-export {
+                flex: 1;
+            }
         }
     </style>
 </head>
 <body>
     <div id="app"></div>
-
+    
     <script>
-        // Haversine formula to calculate distance between two coordinates
+        'use strict';
+        
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 3959; // Earth's radius in miles
+            const R = 3959;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -452,21 +457,17 @@
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
         }
-
-        // Group trips by date and calculate daily totals
+        
         function groupTripsByDate(trips) {
             const grouped = {};
             trips.forEach(trip => {
                 const date = new Date(trip.startTime).toLocaleDateString();
-                if (!grouped[date]) {
-                    grouped[date] = [];
-                }
+                if (!grouped[date]) grouped[date] = [];
                 grouped[date].push(trip);
             });
             return grouped;
         }
-
-        // Main App
+        
         class MileageTracker {
             constructor() {
                 this.isTracking = false;
@@ -475,82 +476,133 @@
                 this.receipts = [];
                 this.homeLocation = null;
                 this.watchId = null;
+                this.updateInterval = null;
                 this.map = null;
                 this.currentMarker = null;
                 this.homeMarker = null;
                 this.routePolyline = null;
-
+                
                 this.loadData();
-                this.loadCurrentTrip(); // Check for unfinished trip
-                this.initMap();
+                this.loadCurrentTrip();
                 this.render();
-                this.requestLocation();
             }
-
+            
             loadData() {
                 const savedTrips = localStorage.getItem('mileageTrips');
-                if (savedTrips) {
-                    this.trips = JSON.parse(savedTrips);
-                }
-
-                const savedHome = localStorage.getItem('homeLocation');
-                if (savedHome) {
-                    this.homeLocation = JSON.parse(savedHome);
-                }
-
                 const savedReceipts = localStorage.getItem('mileageReceipts');
-                if (savedReceipts) {
-                    this.receipts = JSON.parse(savedReceipts);
-                }
+                const savedHome = localStorage.getItem('homeLocation');
+                
+                if (savedTrips) this.trips = JSON.parse(savedTrips);
+                if (savedReceipts) this.receipts = JSON.parse(savedReceipts);
+                if (savedHome) this.homeLocation = JSON.parse(savedHome);
             }
-
+            
             saveTrips() {
                 localStorage.setItem('mileageTrips', JSON.stringify(this.trips));
             }
-
-            requestLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const { latitude, longitude } = position.coords;
-                            if (!this.homeLocation) {
-                                this.homeLocation = { lat: latitude, lng: longitude };
-                                localStorage.setItem('homeLocation', JSON.stringify(this.homeLocation));
-                            }
-                            if (this.map) {
-                                this.map.setView([latitude, longitude], 15);
-                                this.updateMapMarkers();
-                            }
-                        },
-                        (error) => {
-                            console.error('Location error:', error);
-                        }
-                    );
+            
+            saveCurrentTrip() {
+                if (this.currentTrip) {
+                    localStorage.setItem('currentTrip', JSON.stringify(this.currentTrip));
                 }
             }
-
-            requestLocationPermission() {
-                console.log('requestLocationPermission called'); // Debug log
+            
+            loadCurrentTrip() {
+                const saved = localStorage.getItem('currentTrip');
+                if (saved) {
+                    try {
+                        const trip = JSON.parse(saved);
+                        if (trip.inProgress) {
+                            const resume = confirm(
+                                `You have an unfinished trip from ${new Date(trip.startTime).toLocaleString()}. Resume it?`
+                            );
+                            if (resume) {
+                                this.currentTrip = trip;
+                                this.isTracking = true;
+                                this.updateMapMarkers();
+                                this.startTrip();
+                            } else {
+                                localStorage.removeItem('currentTrip');
+                            }
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('currentTrip');
+                    }
+                }
+            }
+            
+            initMap() {
+                setTimeout(() => {
+                    const mapEl = document.getElementById('map');
+                    if (!mapEl) return;
+                    
+                    if (!this.map) {
+                        const center = this.homeLocation || { lat: 37.7749, lng: -122.4194 };
+                        this.map = L.map('map').setView([center.lat, center.lng], 13);
+                        
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '© OpenStreetMap contributors © CARTO',
+                            subdomains: 'abcd',
+                            maxZoom: 19
+                        }).addTo(this.map);
+                    } else {
+                        this.map.invalidateSize();
+                    }
+                    
+                    this.updateMapMarkers();
+                }, 200);
+            }
+            
+            updateMapMarkers() {
+                if (!this.map) return;
                 
+                if (this.currentMarker) this.map.removeLayer(this.currentMarker);
+                if (this.homeMarker) this.map.removeLayer(this.homeMarker);
+                if (this.routePolyline) this.map.removeLayer(this.routePolyline);
+                
+                if (this.homeLocation) {
+                    this.homeMarker = L.marker([this.homeLocation.lat, this.homeLocation.lng], {
+                        icon: L.divIcon({
+                            className: 'home-marker',
+                            html: '<div style="background: #10b981; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                            iconSize: [22, 22]
+                        })
+                    }).addTo(this.map);
+                }
+                
+                if (this.currentTrip && this.currentTrip.path.length > 0) {
+                    const lastPos = this.currentTrip.path[this.currentTrip.path.length - 1];
+                    
+                    this.currentMarker = L.marker([lastPos.lat, lastPos.lng], {
+                        icon: L.divIcon({
+                            className: 'current-marker',
+                            html: '<div style="background: #5F4B8B; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                            iconSize: [22, 22]
+                        })
+                    }).addTo(this.map);
+                    
+                    const coords = this.currentTrip.path.map(p => [p.lat, p.lng]);
+                    this.routePolyline = L.polyline(coords, {
+                        color: '#5F4B8B',
+                        weight: 4,
+                        opacity: 0.7
+                    }).addTo(this.map);
+                    
+                    this.map.setView([lastPos.lat, lastPos.lng], 16);
+                }
+            }
+            
+            locateUser() {
                 if (!navigator.geolocation) {
-                    alert('ERROR: Geolocation is not supported by your browser. Please use Chrome on Android or Safari on iOS.');
+                    alert('Geolocation is not supported by your browser');
                     return;
                 }
-
-                const modal = document.getElementById('permissionModal');
-                const btn = document.getElementById('enableLocationBtn');
                 
-                // Visual feedback
-                if (btn) {
-                    btn.textContent = '🔄 Requesting Permission...';
-                    btn.style.opacity = '0.7';
-                }
-
-                console.log('Requesting geolocation...'); // Debug log
-
+                const locateBtn = document.getElementById('locateBtn');
+                if (locateBtn) locateBtn.textContent = '🔄 Locating...';
+                
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        console.log('Location permission granted!', position); // Debug log
                         const { latitude, longitude } = position.coords;
                         this.homeLocation = { lat: latitude, lng: longitude };
                         localStorage.setItem('homeLocation', JSON.stringify(this.homeLocation));
@@ -560,182 +612,62 @@
                             this.updateMapMarkers();
                         }
                         
-                        if (modal) modal.classList.add('hidden');
-                        alert('✓ Location enabled! Green marker shows your location.');
+                        if (locateBtn) locateBtn.textContent = '📍 Locate Me';
                     },
                     (error) => {
-                        console.error('Geolocation error:', error); // Debug log
+                        if (locateBtn) locateBtn.textContent = '📍 Locate Me';
                         
-                        if (btn) {
-                            btn.textContent = 'Enable Location Access';
-                            btn.style.opacity = '1';
-                        }
-                        
-                        let message = '⚠️ Location Access Failed\n\n';
-                        
+                        let message = 'Could not get your location.\n\n';
                         if (error.code === 1) {
-                            message += 'DENIED: You blocked location access.\n\n';
-                            message += 'To fix:\n';
-                            message += 'ANDROID: Tap 🔒 icon → Permissions → Location → Allow\n';
-                            message += 'iOS: Tap AA in address bar → Website Settings → Location → Allow\n\n';
-                            message += 'Then refresh the page.';
+                            message += 'You denied location access.\n\nTo enable:\n';
+                            message += 'Android: Tap 🔒 → Permissions → Location → Allow\n';
+                            message += 'iOS: Tap AA → Website Settings → Location → Allow';
                         } else if (error.code === 2) {
-                            message += 'UNAVAILABLE: Location service is unavailable.\n\n';
-                            message += 'Make sure:\n';
-                            message += '• Device GPS is turned ON\n';
-                            message += '• You have internet connection\n';
-                            message += '• You\'re using HTTPS (not HTTP or file://)';
+                            message += 'Location unavailable. Make sure GPS is enabled.';
                         } else if (error.code === 3) {
-                            message += 'TIMEOUT: Request timed out.\n\n';
-                            message += 'Try again in a moment.';
-                        } else {
-                            message += 'UNKNOWN ERROR: ' + error.message + '\n\n';
-                            message += 'Are you on GitHub Pages URL (https://...)?\n';
-                            message += 'Local files (file://...) will NOT work.';
+                            message += 'Request timed out. Try again.';
                         }
-                        
                         alert(message);
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 15000,
+                        timeout: 10000,
                         maximumAge: 0
                     }
                 );
             }
-
-            initMap() {
-                setTimeout(() => {
-                    const mapElement = document.getElementById('map');
-                    if (!mapElement) return;
-
-                    // Initialize Leaflet map
-                    this.map = L.map('map', {
-                        zoomControl: true,
-                        attributionControl: false
-                    }).setView([38.7, -77.5], 13);
-
-                    // Add CartoDB tiles (works with local files)
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                        maxZoom: 19,
-                        subdomains: 'abcd'
-                    }).addTo(this.map);
-
-                    // Initialize markers
-                    this.currentMarker = null;
-                    this.homeMarker = null;
-                    this.routePolyline = null;
-
-                    // Get current location and set home
-                    if (navigator.geolocation && !this.homeLocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                const { latitude, longitude } = position.coords;
-                                this.homeLocation = { lat: latitude, lng: longitude };
-                                localStorage.setItem('homeLocation', JSON.stringify(this.homeLocation));
-                                
-                                this.map.setView([latitude, longitude], 15);
-                                this.updateMapMarkers();
-                            }
-                        );
-                    } else if (this.homeLocation) {
-                        this.map.setView([this.homeLocation.lat, this.homeLocation.lng], 15);
-                        this.updateMapMarkers();
-                    }
-                }, 100);
-            }
-
-            updateMapMarkers() {
-                if (!this.map) return;
-
-                // Update home marker
-                if (this.homeLocation && !this.homeMarker) {
-                    this.homeMarker = L.marker([this.homeLocation.lat, this.homeLocation.lng], {
-                        icon: L.divIcon({
-                            className: 'home-marker',
-                            html: '<div style="background: #10b981; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-                            iconSize: [16, 16]
-                        })
-                    }).addTo(this.map).bindPopup('Home');
-                }
-
-                // Update route
-                if (this.currentTrip && this.currentTrip.path.length > 1) {
-                    const latLngs = this.currentTrip.path.map(p => [p.lat, p.lng]);
-                    
-                    if (this.routePolyline) {
-                        this.routePolyline.setLatLngs(latLngs);
-                    } else {
-                        this.routePolyline = L.polyline(latLngs, {
-                            color: '#5F4B8B',
-                            weight: 4,
-                            opacity: 0.8
-                        }).addTo(this.map);
-                    }
-                }
-
-                // Update current position marker
-                if (this.currentTrip && this.currentTrip.lastPosition) {
-                    const pos = this.currentTrip.lastPosition;
-                    
-                    if (this.currentMarker) {
-                        this.currentMarker.setLatLng([pos.lat, pos.lng]);
-                    } else {
-                        this.currentMarker = L.marker([pos.lat, pos.lng], {
-                            icon: L.divIcon({
-                                className: 'current-marker',
-                                html: '<div style="background: #5F4B8B; width: 20px; height: 20px; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 12px rgba(95,75,139,0.6);"></div>',
-                                iconSize: [20, 20]
-                            })
-                        }).addTo(this.map);
-                    }
-
-                    // Center map on current position
-                    this.map.setView([pos.lat, pos.lng], this.map.getZoom());
-                }
-            }
-
-            clearMapMarkers() {
-                if (this.currentMarker) {
-                    this.map.removeLayer(this.currentMarker);
-                    this.currentMarker = null;
-                }
-                if (this.routePolyline) {
-                    this.map.removeLayer(this.routePolyline);
-                    this.routePolyline = null;
-                }
-            }
-
+            
             startTrip() {
                 if (!navigator.geolocation) {
                     alert('Geolocation not supported');
                     return;
                 }
-
-                this.currentTrip = {
-                    id: Date.now(),
-                    startTime: new Date().toISOString(),
-                    endTime: null,
-                    distance: 0,
-                    path: [],
-                    lastPosition: null,
-                    inProgress: true
-                };
-
+                
+                if (!this.currentTrip) {
+                    this.currentTrip = {
+                        id: Date.now(),
+                        startTime: new Date().toISOString(),
+                        endTime: null,
+                        distance: 0,
+                        path: [],
+                        lastPosition: null,
+                        inProgress: true
+                    };
+                }
+                
                 this.isTracking = true;
-                this.saveCurrentTrip(); // Auto-save immediately
+                this.saveCurrentTrip();
                 this.render();
-
-                // Set up periodic map updates
+                
                 this.updateInterval = setInterval(() => {
                     this.render();
                 }, 2000);
-
+                
                 this.watchId = navigator.geolocation.watchPosition(
                     (position) => {
                         const { latitude, longitude } = position.coords;
                         const newPoint = { lat: latitude, lng: longitude };
-
+                        
                         let additionalDistance = 0;
                         if (this.currentTrip.lastPosition) {
                             additionalDistance = calculateDistance(
@@ -745,16 +677,16 @@
                                 longitude
                             );
                         }
-
+                        
                         this.currentTrip.path.push(newPoint);
                         this.currentTrip.distance += additionalDistance;
                         this.currentTrip.lastPosition = newPoint;
-
+                        
                         this.updateMapMarkers();
-                        this.saveCurrentTrip(); // Auto-save on every GPS update
+                        this.saveCurrentTrip();
                     },
                     (error) => {
-                        console.error('Tracking error:', error);
+                        console.error('GPS tracking error:', error);
                     },
                     {
                         enableHighAccuracy: true,
@@ -763,52 +695,26 @@
                     }
                 );
             }
-
-            saveCurrentTrip() {
-                if (this.currentTrip) {
-                    localStorage.setItem('currentTrip', JSON.stringify(this.currentTrip));
-                }
-            }
-
-            loadCurrentTrip() {
-                const saved = localStorage.getItem('currentTrip');
-                if (saved) {
-                    try {
-                        const trip = JSON.parse(saved);
-                        if (trip.inProgress && confirm(`You have an unfinished trip from ${new Date(trip.startTime).toLocaleString()}. Resume it?`)) {
-                            this.currentTrip = trip;
-                            this.isTracking = true;
-                            this.updateMapMarkers();
-                            this.startTrip(); // Resume tracking
-                        } else {
-                            localStorage.removeItem('currentTrip');
-                        }
-                    } catch (e) {
-                        localStorage.removeItem('currentTrip');
-                    }
-                }
-            }
-
+            
             stopTrip() {
                 if (this.watchId) {
                     navigator.geolocation.clearWatch(this.watchId);
                     this.watchId = null;
                 }
-
+                
                 if (this.updateInterval) {
                     clearInterval(this.updateInterval);
                     this.updateInterval = null;
                 }
-
+                
                 if (this.currentTrip) {
                     this.currentTrip.endTime = new Date().toISOString();
                     this.currentTrip.inProgress = false;
                     
-                    // Generate trip summary screenshot before clearing map
                     this.generateTripScreenshot(this.currentTrip).then(() => {
                         this.trips.unshift(this.currentTrip);
                         this.saveTrips();
-                        localStorage.removeItem('currentTrip'); // Clear auto-saved trip
+                        localStorage.removeItem('currentTrip');
                         this.isTracking = false;
                         this.currentTrip = null;
                         this.clearMapMarkers();
@@ -822,15 +728,25 @@
                     this.render();
                 }
             }
-
+            
+            clearMapMarkers() {
+                if (this.routePolyline) {
+                    this.map.removeLayer(this.routePolyline);
+                    this.routePolyline = null;
+                }
+                if (this.currentMarker) {
+                    this.map.removeLayer(this.currentMarker);
+                    this.currentMarker = null;
+                }
+            }
+            
             async generateTripScreenshot(trip) {
                 if (!this.map || !trip.path || trip.path.length < 2) return;
-
+                
                 try {
-                    // Add start and end markers for screenshot
                     const startPos = trip.path[0];
                     const endPos = trip.path[trip.path.length - 1];
-
+                    
                     const startMarker = L.marker([startPos.lat, startPos.lng], {
                         icon: L.divIcon({
                             className: 'start-marker',
@@ -838,7 +754,7 @@
                             iconSize: [50, 30]
                         })
                     }).addTo(this.map);
-
+                    
                     const endMarker = L.marker([endPos.lat, endPos.lng], {
                         icon: L.divIcon({
                             className: 'end-marker',
@@ -846,16 +762,14 @@
                             iconSize: [50, 30]
                         })
                     }).addTo(this.map);
-
-                    // Fit map to show full route
+                    
                     const bounds = L.latLngBounds(trip.path.map(p => [p.lat, p.lng]));
                     this.map.fitBounds(bounds, { padding: [50, 50] });
-
-                    // Add info overlay
+                    
                     const startDate = new Date(trip.startTime);
                     const endDate = new Date(trip.endTime);
                     const duration = Math.round((endDate - startDate) / 60000);
-
+                    
                     const overlay = document.createElement('div');
                     overlay.id = 'trip-screenshot-overlay';
                     overlay.style.cssText = `
@@ -879,43 +793,41 @@
                         <div><strong>Distance:</strong> ${trip.distance.toFixed(2)} mi</div>
                         <div><strong>Duration:</strong> ${duration} min</div>
                     `;
-
+                    
                     const mapContainer = document.querySelector('.map-container');
                     mapContainer.appendChild(overlay);
-
-                    // Wait for map to render
+                    
                     await new Promise(resolve => setTimeout(resolve, 1000));
-
-                    // Capture screenshot
+                    
                     const canvas = await html2canvas(mapContainer, {
                         useCORS: true,
                         allowTaint: true,
                         backgroundColor: '#1e293b'
                     });
-
+                    
                     trip.screenshot = canvas.toDataURL('image/png');
-
-                    // Clean up
+                    
                     this.map.removeLayer(startMarker);
                     this.map.removeLayer(endMarker);
                     overlay.remove();
-
+                    
                 } catch (error) {
                     console.error('Screenshot generation failed:', error);
                 }
             }
-
+            
             deleteTrip(tripId) {
-                this.trips = this.trips.filter(t => t.id !== tripId);
-                this.saveTrips();
-                this.render();
+                if (confirm('Delete this trip?')) {
+                    this.trips = this.trips.filter(t => t.id !== tripId);
+                    this.saveTrips();
+                    this.render();
+                }
             }
-
+            
             viewTripScreenshot(tripId) {
                 const trip = this.trips.find(t => t.id === tripId);
                 if (!trip || !trip.screenshot) return;
-
-                // Open screenshot in new window
+                
                 const win = window.open('', '_blank');
                 const startDate = new Date(trip.startTime);
                 win.document.write(`
@@ -974,25 +886,25 @@
                                 a.download = 'trip-proof-${startDate.toISOString().split('T')[0]}.png';
                                 a.click();
                             }
-                        </script>
+                        <\/script>
                     </body>
                     </html>
                 `);
             }
-
+            
             exportCSV() {
                 const grouped = groupTripsByDate(this.trips);
                 const rows = [['Date', 'Trip Start', 'Trip End', 'Distance (mi)', 'Duration (min)', 'Daily Total (mi)']];
-
+                
                 Object.keys(grouped).sort().reverse().forEach(date => {
                     const dayTrips = grouped[date];
                     const dailyTotal = dayTrips.reduce((sum, trip) => sum + trip.distance, 0);
-
+                    
                     dayTrips.forEach((trip, index) => {
                         const start = new Date(trip.startTime);
                         const end = new Date(trip.endTime);
                         const duration = Math.round((end - start) / 60000);
-
+                        
                         rows.push([
                             date,
                             start.toLocaleTimeString(),
@@ -1002,15 +914,13 @@
                             index === 0 ? dailyTotal.toFixed(2) : ''
                         ]);
                     });
-
-                    // Add separator
+                    
                     rows.push(['', '', '', '', '', '']);
                 });
-
-                // Add grand total
+                
                 const grandTotal = this.trips.reduce((sum, trip) => sum + trip.distance, 0);
                 rows.push(['GRAND TOTAL', '', '', '', '', grandTotal.toFixed(2)]);
-
+                
                 const csvContent = rows.map(row => row.join(',')).join('\n');
                 const blob = new Blob([csvContent], { type: 'text/csv' });
                 const url = URL.createObjectURL(blob);
@@ -1020,20 +930,20 @@
                 a.click();
                 URL.revokeObjectURL(url);
             }
-
+            
             exportExcel() {
                 const grouped = groupTripsByDate(this.trips);
                 const data = [['Date', 'Trip Start', 'Trip End', 'Distance (mi)', 'Duration (min)', 'Daily Total (mi)', 'Screenshot']];
-
+                
                 Object.keys(grouped).sort().reverse().forEach(date => {
                     const dayTrips = grouped[date];
                     const dailyTotal = dayTrips.reduce((sum, trip) => sum + trip.distance, 0);
-
+                    
                     dayTrips.forEach((trip, index) => {
                         const start = new Date(trip.startTime);
                         const end = new Date(trip.endTime);
                         const duration = Math.round((end - start) / 60000);
-
+                        
                         data.push([
                             date,
                             start.toLocaleTimeString(),
@@ -1044,30 +954,22 @@
                             trip.screenshot ? 'Available' : 'None'
                         ]);
                     });
-
+                    
                     data.push(['', '', '', '', '', '', '']);
                 });
-
+                
                 const grandTotal = this.trips.reduce((sum, trip) => sum + trip.distance, 0);
                 data.push(['GRAND TOTAL', '', '', '', '', parseFloat(grandTotal.toFixed(2)), '']);
-
-                const ws = XLSX.utils.aoa_to_sheet(data);
                 
-                // Set column widths
+                const ws = XLSX.utils.aoa_to_sheet(data);
                 ws['!cols'] = [
-                    { wch: 12 },
-                    { wch: 12 },
-                    { wch: 12 },
-                    { wch: 12 },
-                    { wch: 14 },
-                    { wch: 16 },
-                    { wch: 12 }
+                    { wch: 12 }, { wch: 12 }, { wch: 12 },
+                    { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 12 }
                 ];
-
+                
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, 'Mileage Report');
                 
-                // Add note about screenshots
                 const noteSheet = XLSX.utils.aoa_to_sheet([
                     ['TRIP SCREENSHOTS'],
                     [''],
@@ -1086,7 +988,7 @@
                 
                 XLSX.writeFile(wb, `mileage-report-${new Date().toISOString().split('T')[0]}.xlsx`);
             }
-
+            
             async downloadAllScreenshots() {
                 const tripsWithScreenshots = this.trips.filter(t => t.screenshot);
                 
@@ -1094,19 +996,17 @@
                     alert('No trip screenshots available to download.');
                     return;
                 }
-
+                
                 const zip = new JSZip();
                 const folder = zip.folder('trip-screenshots');
-
+                
                 tripsWithScreenshots.forEach(trip => {
                     const start = new Date(trip.startTime);
                     const filename = `trip-${start.toISOString().split('T')[0]}-${start.toLocaleTimeString().replace(/:/g, '-')}.png`;
-                    
-                    // Convert base64 to blob
                     const base64Data = trip.screenshot.split(',')[1];
                     folder.file(filename, base64Data, {base64: true});
                 });
-
+                
                 const blob = await zip.generateAsync({type: 'blob'});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1115,14 +1015,14 @@
                 a.click();
                 URL.revokeObjectURL(url);
             }
-
+            
             handleReceiptUpload(event) {
                 const file = event.target.files[0];
                 if (!file || !file.type.startsWith('image/')) {
                     alert('Please upload an image file');
                     return;
                 }
-
+                
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const newReceipt = {
@@ -1132,57 +1032,42 @@
                         fileName: file.name,
                         note: ''
                     };
-
                     this.receipts.unshift(newReceipt);
                     localStorage.setItem('mileageReceipts', JSON.stringify(this.receipts));
                     this.render();
                 };
                 reader.readAsDataURL(file);
             }
-
+            
             deleteReceipt(receiptId) {
-                this.receipts = this.receipts.filter(r => r.id !== receiptId);
-                localStorage.setItem('mileageReceipts', JSON.stringify(this.receipts));
-                this.render();
+                if (confirm('Delete this receipt?')) {
+                    this.receipts = this.receipts.filter(r => r.id !== receiptId);
+                    localStorage.setItem('mileageReceipts', JSON.stringify(this.receipts));
+                    this.render();
+                }
             }
-
+            
             updateReceiptNote(receiptId, note) {
-                this.receipts = this.receipts.map(r => 
+                this.receipts = this.receipts.map(r =>
                     r.id === receiptId ? { ...r, note } : r
                 );
                 localStorage.setItem('mileageReceipts', JSON.stringify(this.receipts));
             }
-
+            
             render() {
                 const totalMiles = this.trips.reduce((sum, trip) => sum + trip.distance, 0);
-
+                const currentDistance = this.currentTrip ? this.currentTrip.distance : 0;
+                const currentDuration = this.currentTrip
+                    ? Math.round((new Date() - new Date(this.currentTrip.startTime)) / 60000)
+                    : 0;
+                
                 document.getElementById('app').innerHTML = `
-                    <!-- Location Permission Modal -->
-                    <div id="permissionModal" class="permission-modal ${this.homeLocation ? 'hidden' : ''}">
-                        <div class="permission-card">
-                            <div class="permission-icon">📍</div>
-                            <div class="permission-title">Location Access Required</div>
-                            <div class="permission-text">
-                                This app needs your location to track work trips. Your data stays on your device and is never shared.
-                            </div>
-                            <div style="background: rgba(95,75,139,0.2); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.875rem; color: #cbd5e1;">
-                                ⚠️ Make sure you're using:<br/>
-                                <strong>Android:</strong> Chrome browser<br/>
-                                <strong>iOS:</strong> Safari browser<br/>
-                                <strong>URL must start with:</strong> https://
-                            </div>
-                            <button id="enableLocationBtn" class="permission-btn">
-                                Enable Location Access
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="app-container">
                         <div class="header">
                             <div class="header-title">MILEAGE TRACKER</div>
                             <div class="header-subtitle">Work Trip Monitoring System</div>
                         </div>
-
+                        
                         <div class="status-bar">
                             <div class="status-indicator">
                                 <div class="status-dot ${this.isTracking ? '' : 'inactive'}"></div>
@@ -1190,205 +1075,161 @@
                             </div>
                             <div>GPS: ACTIVE</div>
                         </div>
-
-                        <div class="main-content">
-                            <div class="map-container">
-                                <div id="map"></div>
-                                <button id="locateBtn" style="position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; border: 2px solid var(--violet-500); color: var(--violet-500); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                                    📍 Locate Me
-                                </button>
-                            </div>
-
-                            <div class="controls-grid">
-                                <button class="btn btn-start" id="startBtn" ${this.isTracking ? 'disabled' : ''}>
-                                    ▶ Start Trip
-                                </button>
-                                <button class="btn btn-stop" id="stopBtn" ${!this.isTracking ? 'disabled' : ''}>
-                                    ■ Stop Trip
-                                </button>
-                            </div>
-
-                            ${this.isTracking && this.currentTrip ? `
-                                <div class="current-trip-card">
-                                    <div class="card-title">Current Trip</div>
-                                    <div class="stats-grid">
-                                        <div class="stat">
-                                            <div class="stat-label">Distance</div>
-                                            <div class="stat-value">
-                                                ${this.currentTrip.distance.toFixed(2)}
-                                                <span class="stat-unit">mi</span>
-                                            </div>
-                                        </div>
-                                        <div class="stat">
-                                            <div class="stat-label">Duration</div>
-                                            <div class="stat-value">
-                                                ${Math.round((new Date() - new Date(this.currentTrip.startTime)) / 60000)}
-                                                <span class="stat-unit">min</span>
-                                            </div>
-                                        </div>
+                        
+                        <div class="map-container">
+                            <button id="locateBtn" class="locate-btn">📍 Locate Me</button>
+                            <div id="map"></div>
+                        </div>
+                        
+                        <div class="trip-controls">
+                            ${this.isTracking ? `
+                                <div class="trip-stats">
+                                    <div class="stat-card">
+                                        <div class="stat-label">Distance</div>
+                                        <div class="stat-value">${currentDistance.toFixed(2)} mi</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-label">Duration</div>
+                                        <div class="stat-value">${currentDuration} min</div>
                                     </div>
                                 </div>
-                            ` : ''}
-
-                            <div class="trips-section">
-                                <div class="section-header">
-                                    <div class="section-title">
-                                        Trip History (${totalMiles.toFixed(1)} mi total)
+                                <button id="stopBtn" class="btn btn-stop" style="grid-column: 1 / -1;">⏹ Stop Trip</button>
+                            ` : `
+                                <button id="startBtn" class="btn btn-start" style="grid-column: 1 / -1;">▶ Start Trip</button>
+                            `}
+                        </div>
+                        
+                        <div class="trips-section">
+                            <div class="section-header">
+                                <div class="section-title">Trip History (${totalMiles.toFixed(1)} mi total)</div>
+                                ${this.trips.length > 0 ? `
+                                    <div class="export-buttons">
+                                        <button id="exportCsvBtn" class="btn-export">📊 Export CSV</button>
+                                        <button id="exportExcelBtn" class="btn-export">📗 Export Excel</button>
+                                        ${this.trips.some(t => t.screenshot) ? `
+                                            <button id="downloadScreenshotsBtn" class="btn-export" style="background: linear-gradient(135deg, #4A3B6E 0%, #5F4B8B 100%); color: white;">
+                                                📸 Download Screenshots
+                                            </button>
+                                        ` : ''}
                                     </div>
-                                    ${this.trips.length > 0 ? `
-                                        <div class="export-buttons">
-                                            <button class="btn-export" id="exportCsvBtn">
-                                                📊 Export CSV
-                                            </button>
-                                            <button class="btn-export btn-export-excel" id="exportExcelBtn">
-                                                📗 Export Excel
-                                            </button>
-                                            ${this.trips.some(t => t.screenshot) ? `
-                                                <button class="btn-export" id="downloadScreenshotsBtn" style="background: linear-gradient(135deg, #4A3B6E 0%, #5F4B8B 100%); color: white;">
-                                                    📸 Download Screenshots
+                                ` : ''}
+                            </div>
+                            
+                            ${this.trips.length === 0 ? `
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">🚗</div>
+                                    <div>No trips recorded yet</div>
+                                    <div style="font-size: 0.875rem; margin-top: 0.5rem; color: var(--slate-500);">
+                                        Start your first trip to begin tracking mileage
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="trips-list">
+                                    ${this.trips.map(trip => {
+                                        const start = new Date(trip.startTime);
+                                        const end = new Date(trip.endTime);
+                                        const duration = Math.round((end - start) / 60000);
+                                        
+                                        return `
+                                            <div class="trip-item">
+                                                <div class="trip-header">
+                                                    <div class="trip-date">
+                                                        ${start.toLocaleDateString()} • ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                    <div class="trip-distance">
+                                                        ${trip.distance.toFixed(2)} mi
+                                                    </div>
+                                                </div>
+                                                <div class="trip-details">
+                                                    <span>⏱ ${duration} min</span>
+                                                    <span>📍 ${trip.path.length} points</span>
+                                                </div>
+                                                ${trip.screenshot ? `
+                                                    <button class="btn-export" onclick="app.viewTripScreenshot(${trip.id})" 
+                                                            style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-500) 100%); color: white; border: none;">
+                                                        📸 View Trip Proof
+                                                    </button>
+                                                ` : ''}
+                                                <button class="btn-delete" onclick="app.deleteTrip(${trip.id})">
+                                                    Delete
                                                 </button>
-                                            ` : ''}
-                                        </div>
-                                    ` : ''}
+                                            </div>
+                                        `;
+                                    }).join('')}
                                 </div>
-
-                                ${this.trips.length === 0 ? `
-                                    <div class="empty-state">
-                                        <div class="empty-state-icon">🚗</div>
-                                        <div>No trips recorded yet</div>
-                                        <div style="font-size: 0.875rem; margin-top: 0.5rem">
-                                            Start your first trip to begin tracking mileage
-                                        </div>
+                            `}
+                        </div>
+                        
+                        <div class="receipts-section">
+                            <div class="section-header">
+                                <div class="section-title">Receipts & Photos (${this.receipts.length})</div>
+                                <button id="addPhotoBtn" class="add-photo-btn">📷 Add Photo</button>
+                            </div>
+                            
+                            <input type="file" id="receiptInput" accept="image/*" />
+                            
+                            ${this.receipts.length === 0 ? `
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📷</div>
+                                    <div>No receipts added yet</div>
+                                    <div style="font-size: 0.875rem; margin-top: 0.5rem; color: var(--slate-500);">
+                                        Add gas receipts or other expense photos
                                     </div>
-                                ` : `
-                                    <div class="trip-list">
-                                        ${this.trips.map(trip => {
-                                            const start = new Date(trip.startTime);
-                                            const end = new Date(trip.endTime);
-                                            const duration = Math.round((end - start) / 60000);
-                                            
-                                            return `
-                                                <div class="trip-item">
-                                                    <div class="trip-header">
-                                                        <div class="trip-date">
-                                                            ${start.toLocaleDateString()} • ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </div>
-                                                        <div class="trip-distance">
-                                                            ${trip.distance.toFixed(2)} mi
-                                                        </div>
+                                </div>
+                            ` : `
+                                <div class="receipts-grid">
+                                    ${this.receipts.map(receipt => {
+                                        const date = new Date(receipt.timestamp);
+                                        return `
+                                            <div class="receipt-card">
+                                                <img src="${receipt.imageData}" alt="${receipt.fileName}" class="receipt-image" />
+                                                <div class="receipt-info">
+                                                    <div class="receipt-date">
+                                                        ${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
-                                                    <div class="trip-details">
-                                                        <span>⏱ ${duration} min</span>
-                                                        <span>📍 ${trip.path.length} points</span>
-                                                    </div>
-                                                    ${trip.screenshot ? `
-                                                        <button class="btn-export" onclick="app.viewTripScreenshot(${trip.id})" 
-                                                                style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-500) 100%); color: white;">
-                                                            📸 View Trip Proof
-                                                        </button>
-                                                    ` : ''}
-                                                    <button class="btn-delete" onclick="app.deleteTrip(${trip.id})">
+                                                    <input type="text" 
+                                                           class="receipt-note" 
+                                                           placeholder="Add note..."
+                                                           value="${receipt.note}"
+                                                           onchange="app.updateReceiptNote(${receipt.id}, this.value)" />
+                                                    <button class="btn-delete" onclick="app.deleteReceipt(${receipt.id})">
                                                         Delete
                                                     </button>
                                                 </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                `}
-                            </div>
-
-                            <!-- Receipts & Photos Section -->
-                            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--slate-700);">
-                                <div class="section-header">
-                                    <div class="section-title">
-                                        Receipts & Photos (${this.receipts.length})
-                                    </div>
-                                    <div>
-                                        <input
-                                            type="file"
-                                            id="receiptInput"
-                                            accept="image/*"
-                                            capture="environment"
-                                            style="display: none;"
-                                        />
-                                        <button class="btn-export btn-export-excel" id="addPhotoBtn">
-                                            📷 Add Photo
-                                        </button>
-                                    </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
                                 </div>
-
-                                ${this.receipts.length === 0 ? `
-                                    <div class="empty-state">
-                                        <div class="empty-state-icon">🧾</div>
-                                        <div>No receipts or photos yet</div>
-                                        <div style="font-size: 0.875rem; margin-top: 0.5rem">
-                                            Tap "Add Photo" to capture gas receipts
-                                        </div>
-                                    </div>
-                                ` : `
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                                        ${this.receipts.map(receipt => {
-                                            const date = new Date(receipt.timestamp);
-                                            return `
-                                                <div style="background: var(--slate-800); border: 1px solid var(--slate-700); border-radius: 8px; overflow: hidden;">
-                                                    <div style="width: 100%; height: 200px; overflow: hidden; background: var(--slate-900); display: flex; align-items: center; justify-content: center; cursor: pointer;"
-                                                         onclick="window.open().document.write('<img src=\\'${receipt.imageData}\\' style=\\'max-width:100%; height:auto;\\'/>'); void(0);">
-                                                        <img src="${receipt.imageData}" 
-                                                             alt="${receipt.fileName}"
-                                                             style="width: 100%; height: 100%; object-fit: cover;" />
-                                                    </div>
-                                                    <div style="padding: 1rem;">
-                                                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--slate-400); margin-bottom: 0.5rem;">
-                                                            ${date.toLocaleDateString()} • ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </div>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Add note (e.g., 'Shell gas, $45.20')"
-                                                            value="${receipt.note}"
-                                                            oninput="app.updateReceiptNote(${receipt.id}, this.value)"
-                                                            style="width: 100%; background: var(--slate-900); border: 1px solid var(--slate-700); border-radius: 4px; padding: 0.5rem; color: var(--slate-100); font-size: 0.875rem; margin-bottom: 0.5rem;"
-                                                        />
-                                                        <button onclick="app.deleteReceipt(${receipt.id})" class="btn-delete" style="width: 100%;">
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                `}
-                            </div>
+                            `}
                         </div>
                     </div>
                 `;
-
-                // Re-attach event listeners
+                
+                this.attachEventListeners();
+                this.initMap();
+            }
+            
+            attachEventListeners() {
                 const startBtn = document.getElementById('startBtn');
                 const stopBtn = document.getElementById('stopBtn');
                 const exportCsvBtn = document.getElementById('exportCsvBtn');
                 const exportExcelBtn = document.getElementById('exportExcelBtn');
+                const downloadScreenshotsBtn = document.getElementById('downloadScreenshotsBtn');
                 const addPhotoBtn = document.getElementById('addPhotoBtn');
                 const receiptInput = document.getElementById('receiptInput');
                 const locateBtn = document.getElementById('locateBtn');
-                const enableLocationBtn = document.getElementById('enableLocationBtn');
-                const downloadScreenshotsBtn = document.getElementById('downloadScreenshotsBtn');
-
+                
                 if (startBtn) startBtn.addEventListener('click', () => this.startTrip());
                 if (stopBtn) stopBtn.addEventListener('click', () => this.stopTrip());
                 if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => this.exportCSV());
                 if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => this.exportExcel());
+                if (downloadScreenshotsBtn) downloadScreenshotsBtn.addEventListener('click', () => this.downloadAllScreenshots());
                 if (addPhotoBtn) addPhotoBtn.addEventListener('click', () => receiptInput.click());
                 if (receiptInput) receiptInput.addEventListener('change', (e) => this.handleReceiptUpload(e));
                 if (locateBtn) locateBtn.addEventListener('click', () => this.locateUser());
-                if (enableLocationBtn) enableLocationBtn.addEventListener('click', () => this.requestLocationPermission());
-                if (downloadScreenshotsBtn) downloadScreenshotsBtn.addEventListener('click', () => this.downloadAllScreenshots());
-
-                // Reinitialize map
-                this.initMap();
             }
         }
-
-        // Initialize app
+        
         let app;
         document.addEventListener('DOMContentLoaded', () => {
             app = new MileageTracker();
