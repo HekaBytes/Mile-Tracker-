@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mileage Tracker - Debug</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        
+        #debug {
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .warning { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 ANDROID DEBUG MODE</h1>
+    <div id="debug"></div>
+    
+    <script>
+        const log = (msg, type = 'info') => {
+            const debug = document.getElementById('debug');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            debug.innerHTML += `<div class="${className}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            console.log(msg);
+        };
+        
+        // Catch all errors
+        window.onerror = function(msg, url, line, col, error) {
+            log(`ERROR: ${msg} at line ${line}:${col}`, 'error');
+            log(`Stack: ${error ? error.stack : 'no stack'}`, 'error');
+            return false;
+        };
+        
+        log('✓ Page loaded', 'success');
+        log('✓ JavaScript running', 'success');
+        
+        // Test 1: Check if Leaflet CDN loads
+        log('Loading Leaflet CSS...', 'warning');
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+        link.onload = () => log('✓ Leaflet CSS loaded', 'success');
+        link.onerror = () => log('✗ Leaflet CSS FAILED', 'error');
+        document.head.appendChild(link);
+        
+        log('Loading Leaflet JS...', 'warning');
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+        script.onload = () => {
+            log('✓ Leaflet JS loaded', 'success');
+            
+            // Test 2: Check if L is defined
+            setTimeout(() => {
+                if (typeof L !== 'undefined') {
+                    log('✓ Leaflet (L) is defined', 'success');
+                    
+                    // Test 3: Try creating a map
+                    try {
+                        log('Creating map div...', 'warning');
+                        const mapDiv = document.createElement('div');
+                        mapDiv.id = 'map';
+                        mapDiv.style.width = '100%';
+                        mapDiv.style.height = '300px';
+                        mapDiv.style.marginTop = '20px';
+                        mapDiv.style.border = '2px solid #0f0';
+                        document.body.appendChild(mapDiv);
+                        
+                        log('Initializing map...', 'warning');
+                        const map = L.map('map').setView([37.7749, -122.4194], 13);
+                        log('✓ Map object created', 'success');
+                        
+                        log('Loading tiles...', 'warning');
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap',
+                            maxZoom: 19
+                        }).addTo(map);
+                        log('✓ Tiles added to map', 'success');
+                        
+                        log('=== MAP SHOULD BE VISIBLE BELOW ===', 'success');
+                        
+                    } catch (error) {
+                        log('✗ Map creation FAILED: ' + error.message, 'error');
+                        log('Stack: ' + error.stack, 'error');
+                    }
+                } else {
+                    log('✗ Leaflet (L) is NOT defined', 'error');
+                }
+            }, 1000);
+        };
+        script.onerror = () => log('✗ Leaflet JS FAILED to load', 'error');
+        document.head.appendChild(script);
+        
+        // Test 4: Check localStorage
+        try {
+            localStorage.setItem('test', 'test');
+            localStorage.removeItem('test');
+            log('✓ localStorage working', 'success');
+        } catch (e) {
+            log('✗ localStorage FAILED: ' + e.message, 'error');
+        }
+        
+        // Test 5: Check geolocation
+        if (navigator.geolocation) {
+            log('✓ Geolocation API available', 'success');
+        } else {
+            log('✗ Geolocation NOT available', 'error');
+        }
+        
+        // Test 6: User agent
+        log('User Agent: ' + navigator.userAgent, 'warning');
+        
+        // Test 7: Screen size
+        log(`Screen: ${window.innerWidth}x${window.innerHeight}`, 'warning');
+    </script>
+</body>
+</html>
