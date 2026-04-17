@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to CSV Converter</title>
+    
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #10b981;
+            text-align: center;
+        }
+        
+        .step {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .step h3 {
+            color: #8b5cf6;
+            margin-top: 0;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            border: 2px dashed #666;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            background: #10b981;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        #status {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        
+        .stats {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .stat-item {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 JSON → CSV CONVERTER</h1>
+    
+    <div class="step">
+        <h3>Step 1: Select Your JSON File</h3>
+        <input type="file" id="fileInput" accept=".json" />
+    </div>
+    
+    <div id="stats" class="stats"></div>
+    
+    <button id="convertBtn" disabled>⬇️ Download CSV</button>
+    
+    <div id="status">Waiting for file...</div>
+    
+    <script>
+        let processedData = null;
+        
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const status = document.getElementById('status');
+            status.textContent = `📂 Reading file: ${file.name}\n📦 Size: ${(file.size / 1024).toFixed(1)} KB\n\n⏳ Processing...`;
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                try {
+                    const json = event.target.result;
+                    status.textContent += '\n✅ File loaded into memory';
+                    
+                    // Parse JSON
+                    status.textContent += '\n🔄 Parsing JSON...';
+                    const trips = JSON.parse(json);
+                    status.textContent += '\n✅ JSON parsed successfully';
+                    
+                    // Filter out null entries
+                    const validTrips = trips.filter(t => t !== null && t !== undefined);
+                    status.textContent += `\n✅ Found ${validTrips.length} valid trips`;
+                    
+                    // Calculate stats
+                    const totalMiles = validTrips.reduce((sum, t) => sum + (t.distance || 0), 0);
+                    const totalPoints = validTrips.reduce((sum, t) => sum + (t.path ? t.path.length : 0), 0);
+                    
+                    // Show stats
+                    const statsDiv = document.getElementById('stats');
+                    statsDiv.style.display = 'block';
+                    statsDiv.innerHTML = `
+                        <div class="stat-item">📍 <strong>${validTrips.length}</strong> trips found</div>
+                        <div class="stat-item">🛣️ <strong>${totalMiles.toFixed(2)}</strong> total miles</div>
+                        <div class="stat-item">📊 <strong>${totalPoints.toLocaleString()}</strong> GPS points</div>
+                    `;
+                    
+                    // Convert to CSV
+                    status.textContent += '\n🔄 Converting to CSV...';
+                    const csv = convertToCSV(validTrips);
+                    status.textContent += '\n✅ CSV ready!';
+                    status.textContent += '\n\n👇 Click "Download CSV" button above';
+                    
+                    processedData = csv;
+                    document.getElementById('convertBtn').disabled = false;
+                    
+                } catch (error) {
+                    status.textContent += '\n\n❌ ERROR: ' + error.message;
+                    console.error(error);
+                }
+            };
+            
+            reader.onerror = function() {
+                status.textContent += '\n\n❌ Failed to read file';
+            };
+            
+            reader.readAsText(file);
+        });
+        
+        document.getElementById('convertBtn').addEventListener('click', function() {
+            if (!processedData) return;
+            
+            const blob = new Blob([processedData], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mileage-export-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            document.getElementById('status').textContent += '\n\n✅ CSV DOWNLOADED!';
+        });
+        
+        function convertToCSV(trips) {
+            const rows = [['Date', 'Start Time', 'End Time', 'Duration (min)', 'Distance (mi)', 'Points']];
+            
+            trips.forEach((trip, index) => {
+                try {
+                    let startDate = 'N/A';
+                    let startTime = 'N/A';
+                    let endTime = 'N/A';
+                    
+                    if (trip.startTime) {
+                        const start = new Date(trip.startTime);
+                        if (!isNaN(start.getTime())) {
+                            startDate = start.toLocaleDateString();
+                            startTime = start.toLocaleTimeString();
+                        }
+                    }
+                    
+                    if (trip.endTime) {
+                        const end = new Date(trip.endTime);
+                        if (!isNaN(end.getTime())) {
+                            endTime = end.toLocaleTimeString();
+                        }
+                    }
+                    
+                    const duration = trip.duration ? Math.floor(trip.duration / 60) : 0;
+                    const distance = (trip.distance || 0).toFixed(2);
+                    const points = (trip.path && Array.isArray(trip.path)) ? trip.path.length : 0;
+                    
+                    rows.push([
+                        startDate,
+                        startTime,
+                        endTime,
+                        duration,
+                        distance,
+                        points
+                    ]);
+                } catch (error) {
+                    console.error('Error processing trip', index, error);
+                }
+            });
+            
+            const totalMiles = trips.reduce((sum, t) => sum + (t.distance || 0), 0);
+            rows.push(['', '', '', 'TOTAL', totalMiles.toFixed(2), '']);
+            
+            return rows.map(row => row.join(',')).join('\n');
+        }
+    </script>
+</body>
+</html>
