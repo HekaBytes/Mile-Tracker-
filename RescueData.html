@@ -206,19 +206,52 @@
                 const trips = JSON.parse(saved);
                 const rows = [['Date', 'Start Time', 'End Time', 'Duration (min)', 'Distance (mi)', 'Points']];
                 
-                trips.forEach(trip => {
-                    const start = new Date(trip.startTime);
-                    const end = trip.endTime ? new Date(trip.endTime) : new Date();
-                    const duration = trip.duration ? Math.floor(trip.duration / 60) : 0;
-                    
-                    rows.push([
-                        start.toLocaleDateString(),
-                        start.toLocaleTimeString(),
-                        end.toLocaleTimeString(),
-                        duration,
-                        (trip.distance || 0).toFixed(2),
-                        trip.path ? trip.path.length : 0
-                    ]);
+                trips.forEach((trip, index) => {
+                    try {
+                        // Handle missing or invalid dates
+                        let startDate = 'N/A';
+                        let startTime = 'N/A';
+                        let endTime = 'N/A';
+                        
+                        if (trip.startTime) {
+                            try {
+                                const start = new Date(trip.startTime);
+                                if (!isNaN(start.getTime())) {
+                                    startDate = start.toLocaleDateString();
+                                    startTime = start.toLocaleTimeString();
+                                }
+                            } catch (e) {
+                                console.error('Invalid start time for trip', index, e);
+                            }
+                        }
+                        
+                        if (trip.endTime) {
+                            try {
+                                const end = new Date(trip.endTime);
+                                if (!isNaN(end.getTime())) {
+                                    endTime = end.toLocaleTimeString();
+                                }
+                            } catch (e) {
+                                console.error('Invalid end time for trip', index, e);
+                            }
+                        }
+                        
+                        const duration = trip.duration ? Math.floor(trip.duration / 60) : 0;
+                        const distance = (trip.distance || 0).toFixed(2);
+                        const points = (trip.path && Array.isArray(trip.path)) ? trip.path.length : 0;
+                        
+                        rows.push([
+                            startDate,
+                            startTime,
+                            endTime,
+                            duration,
+                            distance,
+                            points
+                        ]);
+                    } catch (tripError) {
+                        console.error('Error processing trip', index, tripError);
+                        rows.push(['ERROR', 'Trip ' + index, 'malformed', '', '', '']);
+                    }
                 });
                 
                 const totalMiles = trips.reduce((sum, t) => sum + (t.distance || 0), 0);
@@ -233,9 +266,9 @@
                 a.click();
                 URL.revokeObjectURL(url);
                 
-                alert('✅ CSV downloaded!');
+                alert('✅ CSV downloaded! Check for any ERROR rows.');
             } catch (error) {
-                alert('❌ CSV export failed: ' + error.message);
+                alert('❌ CSV export failed: ' + error.message + '\n\nTry "Download as JSON" instead.');
             }
         }
         
