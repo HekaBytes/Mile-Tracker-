@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Rescue</title>
+    
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #10b981;
+            text-align: center;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+        }
+        
+        .btn-show {
+            background: #3b82f6;
+        }
+        
+        .btn-download {
+            background: #10b981;
+        }
+        
+        .btn-copy {
+            background: #8b5cf6;
+        }
+        
+        .btn-clear {
+            background: #dc2626;
+        }
+        
+        #output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .stats {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>💾 DATA RESCUE</h1>
+    
+    <div class="stats" id="stats">
+        <div class="stat-item">Checking localStorage...</div>
+    </div>
+    
+    <button class="btn-show" onclick="showData()">📊 Show My Data</button>
+    <button class="btn-copy" onclick="copyData()">📋 Copy to Clipboard</button>
+    <button class="btn-download" onclick="downloadData()">⬇️ Download as JSON</button>
+    <button class="btn-download" onclick="downloadCSV()">📗 Download as CSV</button>
+    <button class="btn-clear" onclick="clearData()">🗑️ Clear All Data (DANGER!)</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        let tripsData = null;
+        
+        // Check for data on load
+        window.addEventListener('load', function() {
+            try {
+                const saved = localStorage.getItem('mileageTrips');
+                const statsDiv = document.getElementById('stats');
+                
+                if (saved) {
+                    tripsData = JSON.parse(saved);
+                    const totalMiles = tripsData.reduce((sum, t) => sum + (t.distance || 0), 0);
+                    const totalTrips = tripsData.length;
+                    
+                    statsDiv.innerHTML = `
+                        <div class="stat-item">✅ Found Data!</div>
+                        <div class="stat-item">📍 <strong>${totalTrips}</strong> trips recorded</div>
+                        <div class="stat-item">🛣️ <strong>${totalMiles.toFixed(2)}</strong> total miles</div>
+                        <div class="stat-item">💾 Data size: <strong>${(saved.length / 1024).toFixed(1)}</strong> KB</div>
+                    `;
+                } else {
+                    statsDiv.innerHTML = `
+                        <div class="stat-item">⚠️ No data found in localStorage</div>
+                        <div class="stat-item">Key checked: 'mileageTrips'</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('stats').innerHTML = `
+                    <div class="stat-item">❌ Error reading data: ${error.message}</div>
+                `;
+            }
+        });
+        
+        function showData() {
+            const output = document.getElementById('output');
+            const saved = localStorage.getItem('mileageTrips');
+            
+            if (!saved) {
+                output.textContent = '❌ No data found';
+                return;
+            }
+            
+            try {
+                const trips = JSON.parse(saved);
+                output.textContent = JSON.stringify(trips, null, 2);
+            } catch (error) {
+                output.textContent = '❌ Error parsing data: ' + error.message + '\n\nRaw data:\n' + saved;
+            }
+        }
+        
+        function copyData() {
+            const saved = localStorage.getItem('mileageTrips');
+            
+            if (!saved) {
+                alert('❌ No data to copy');
+                return;
+            }
+            
+            // Try modern clipboard API first
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(saved).then(() => {
+                    alert('✅ Data copied to clipboard!');
+                }).catch(err => {
+                    // Fallback
+                    fallbackCopy(saved);
+                });
+            } else {
+                fallbackCopy(saved);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('✅ Data copied to clipboard!');
+            } catch (err) {
+                alert('❌ Copy failed. Try the Download button instead.');
+            }
+            document.body.removeChild(textarea);
+        }
+        
+        function downloadData() {
+            const saved = localStorage.getItem('mileageTrips');
+            
+            if (!saved) {
+                alert('❌ No data to download');
+                return;
+            }
+            
+            const blob = new Blob([saved], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mileage-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert('✅ Data downloaded!');
+        }
+        
+        function downloadCSV() {
+            const saved = localStorage.getItem('mileageTrips');
+            
+            if (!saved) {
+                alert('❌ No data to download');
+                return;
+            }
+            
+            try {
+                const trips = JSON.parse(saved);
+                const rows = [['Date', 'Start Time', 'End Time', 'Duration (min)', 'Distance (mi)', 'Points']];
+                
+                trips.forEach(trip => {
+                    const start = new Date(trip.startTime);
+                    const end = trip.endTime ? new Date(trip.endTime) : new Date();
+                    const duration = trip.duration ? Math.floor(trip.duration / 60) : 0;
+                    
+                    rows.push([
+                        start.toLocaleDateString(),
+                        start.toLocaleTimeString(),
+                        end.toLocaleTimeString(),
+                        duration,
+                        (trip.distance || 0).toFixed(2),
+                        trip.path ? trip.path.length : 0
+                    ]);
+                });
+                
+                const totalMiles = trips.reduce((sum, t) => sum + (t.distance || 0), 0);
+                rows.push(['', '', '', 'TOTAL', totalMiles.toFixed(2), '']);
+                
+                const csv = rows.map(row => row.join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `mileage-export-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                alert('✅ CSV downloaded!');
+            } catch (error) {
+                alert('❌ CSV export failed: ' + error.message);
+            }
+        }
+        
+        function clearData() {
+            if (confirm('⚠️ DELETE ALL TRIP DATA?\n\nThis cannot be undone!\n\nDownload a backup first!')) {
+                if (confirm('Are you ABSOLUTELY SURE?')) {
+                    localStorage.removeItem('mileageTrips');
+                    alert('✅ Data cleared');
+                    location.reload();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
